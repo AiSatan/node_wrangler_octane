@@ -17,10 +17,10 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "Node Wrangler",
-    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer",
-    "version": (3, 36),
-    "blender": (2, 80, 0),
+    "name": "Node Wrangler (Custom build for Octane)",
+    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
+    "version": (0, 1),
+    "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
     "warning": "",
@@ -1732,14 +1732,22 @@ class NWEmissionViewer(Operator, NWBase):
                                 emission_exists = True
                                 emission_placeholder = node
                         if not emission_exists:
-                            emission = nodes.new(shader_viewer_ident)
+                            # Start of the patch by AiSatan for Octane
+                            
+                            if context.scene.render.engine == 'octane':
+                                emission = nodes.new("ShaderNodeOctDiffuseMat")
+                                emission.label = "Octane Viewer"
+                            else:
+                                emission = nodes.new(shader_viewer_ident)
+                                emission.label = "Cycle/Eevee Viewer"
+
                             emission.hide = True
                             emission.location = [materialout.location.x, (materialout.location.y + 40)]
-                            emission.label = "Viewer"
                             emission.name = "Emission Viewer"
                             emission.use_custom_color = True
                             emission.color = (0.6, 0.5, 0.4)
                             emission.select = False
+                            # End of the patch for Octane
                         else:
                             emission = emission_placeholder
                         make_links.append((active.outputs[out_i], emission.inputs[0]))
