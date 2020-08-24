@@ -19,12 +19,12 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
     "warning": "",
-    "doc_url": "{BLENDER_MANUAL_URL}/addons/node/node_wrangler.html",
+    "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
     "category": "Node",
 }
 
@@ -113,6 +113,12 @@ shaders_input_nodes_props = (
     ('ShaderNodeWireframe', 'WIREFRAME', 'Wireframe'),
 
 )
+
+octane_node_layout = (
+    ('ShaderNodeOctTextureEnvironment', 'ShaderNodeOctTextureEnvironment', 'Texture Environment'),
+
+)
+
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
 # Keeping things in alphabetical orde so we don't need to sort later.
@@ -1896,7 +1902,8 @@ class NWSwitchNodeType(Operator, NWBase):
         list(texture_textures_nodes_props) +
         list(texture_converter_nodes_props) +
         list(texture_distort_nodes_props) +
-        list(texture_layout_nodes_props)
+        list(texture_layout_nodes_props) +
+        list(octane_node_layout)
     )
 
     def execute(self, context):
@@ -1909,6 +1916,7 @@ class NWSwitchNodeType(Operator, NWBase):
                          'show_options', 'show_preview', 'show_texture',
                          'use_alpha', 'use_clamp', 'use_custom_color', 'location'
                          )
+        print("test")
         selected = [n for n in nodes if n.select]
         reselect = []
         for node in [n for n in selected if
@@ -4137,6 +4145,7 @@ class NWSwitchNodeTypeMenu(Menu, NWBase):
             layout.menu(NWSwitchShadersVectorSubmenu.bl_idname)
             layout.menu(NWSwitchShadersConverterSubmenu.bl_idname)
             layout.menu(NWSwitchShadersLayoutSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneSubmenu.bl_idname)
         if tree.type == 'COMPOSITING':
             layout.menu(NWSwitchCompoInputSubmenu.bl_idname)
             layout.menu(NWSwitchCompoOutputSubmenu.bl_idname)
@@ -4165,6 +4174,16 @@ class NWSwitchShadersInputSubmenu(Menu, NWBase):
     def draw(self, context):
         layout = self.layout
         for ident, node_type, rna_name in shaders_input_nodes_props:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_submenu"
+    bl_label = "Octane"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_node_layout:
             props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
             props.to_type = ident
 
@@ -4803,6 +4822,7 @@ classes = (
     NWVertColMenu,
     NWSwitchNodeTypeMenu,
     NWSwitchShadersInputSubmenu,
+    NWSwitchShadersOctaneSubmenu,
     NWSwitchShadersOutputSubmenu,
     NWSwitchShadersShaderSubmenu,
     NWSwitchShadersTextureSubmenu,
