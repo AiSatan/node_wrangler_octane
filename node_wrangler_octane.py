@@ -139,55 +139,12 @@ octane_layers_node_layout = (
 )
 octane_textures_node_layout = (
     ('ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex'),
-    ('ShaderNodeOctFloatTex', 'ShaderNodeOctFloatTex', 'ShaderNodeOctFloatTex'),
-    ('ShaderNodeOctOSLTex', 'ShaderNodeOctOSLTex', 'ShaderNodeOctOSLTex'),
     ('ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex'),
     ('ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex'),
     ('ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex'),
     ('ShaderNodeOctImageTex', 'ShaderNodeOctImageTex', 'ShaderNodeOctImageTex'),
     ('ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex'),
-    ('ShaderNodeOctChecksTex', 'ShaderNodeOctChecksTex', 'ShaderNodeOctChecksTex'),
-    ('ShaderNodeOctMarbleTex', 'ShaderNodeOctMarbleTex', 'ShaderNodeOctMarbleTex'),
-    ('ShaderNodeOctNoiseTex', 'ShaderNodeOctNoiseTex', 'ShaderNodeOctNoiseTex'),
-    ('ShaderNodeOctRidgedFractalTex', 'ShaderNodeOctRidgedFractalTex', 'ShaderNodeOctRidgedFractalTex'),
-    ('ShaderNodeOctSawWaveTex', 'ShaderNodeOctSawWaveTex', 'ShaderNodeOctSawWaveTex'),
-    ('ShaderNodeOctSineWaveTex', 'ShaderNodeOctSineWaveTex', 'ShaderNodeOctSineWaveTex'),
-    ('ShaderNodeOctTriWaveTex', 'ShaderNodeOctTriWaveTex', 'ShaderNodeOctTriWaveTex'),
-    ('ShaderNodeOctTurbulenceTex', 'ShaderNodeOctTurbulenceTex', 'ShaderNodeOctTurbulenceTex'),
-    ('ShaderNodeOctDirtTex', 'ShaderNodeOctDirtTex', 'ShaderNodeOctDirtTex'),
-    ('ShaderNodeOctFalloffTex', 'ShaderNodeOctFalloffTex', 'ShaderNodeOctFalloffTex'),
     ('ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex'),
-    ('ShaderNodeOctInstanceRangeTex', 'ShaderNodeOctInstanceRangeTex', 'ShaderNodeOctInstanceRangeTex'),
-    ('ShaderNodeOctPolygonSideTex', 'ShaderNodeOctPolygonSideTex', 'ShaderNodeOctPolygonSideTex'),
-    ('ShaderNodeOctRandomColorTex', 'ShaderNodeOctRandomColorTex', 'ShaderNodeOctRandomColorTex'),
-    ('ShaderNodeOctWTex', 'ShaderNodeOctWTex', 'ShaderNodeOctWTex'),
-    ('ShaderNodeOctFloatVertexTex', 'ShaderNodeOctFloatVertexTex', 'ShaderNodeOctFloatVertexTex'),
-    ('ShaderNodeOctColorVertexTex', 'ShaderNodeOctColorVertexTex', 'ShaderNodeOctColorVertexTex'),
-    ('ShaderNodeOctBakingTex', 'ShaderNodeOctBakingTex', 'ShaderNodeOctBakingTex'),
-    ('ShaderNodeOctTriplanarTex', 'ShaderNodeOctTriplanarTex', 'ShaderNodeOctTriplanarTex'),
-    ('ShaderNodeOctUVWTransformTex', 'ShaderNodeOctUVWTransformTex', 'ShaderNodeOctUVWTransformTex'),
-    ('ShaderNodeOctAddTex', 'ShaderNodeOctAddTex', 'ShaderNodeOctAddTex'),
-    ('ShaderNodeOctClampTex', 'ShaderNodeOctClampTex', 'ShaderNodeOctClampTex'),
-    ('ShaderNodeOctColorCorrectTex', 'ShaderNodeOctColorCorrectTex', 'ShaderNodeOctColorCorrectTex'),
-    ('ShaderNodeOctCompareTex', 'ShaderNodeOctCompareTex', 'ShaderNodeOctCompareTex'),
-    ('ShaderNodeOctCosineMixTex', 'ShaderNodeOctCosineMixTex', 'ShaderNodeOctCosineMixTex'),
-    ('ShaderNodeOctGradientTex', 'ShaderNodeOctGradientTex', 'ShaderNodeOctGradientTex'),
-    ('ShaderNodeOctInvertTex', 'ShaderNodeOctInvertTex', 'ShaderNodeOctInvertTex'),
-    ('ShaderNodeOctMixTex', 'ShaderNodeOctMixTex', 'ShaderNodeOctMixTex'),
-    ('ShaderNodeOctMultiplyTex', 'ShaderNodeOctMultiplyTex', 'ShaderNodeOctMultiplyTex'),
-    ('ShaderNodeOctSubtractTex', 'ShaderNodeOctSubtractTex', 'ShaderNodeOctSubtractTex'),
-    ('ShaderNodeOctDisplacementTex', 'ShaderNodeOctDisplacementTex', 'ShaderNodeOctDisplacementTex'),
-    ('ShaderNodeOctVertexDisplacementTex', 'ShaderNodeOctVertexDisplacementTex', 'ShaderNodeOctVertexDisplacementTex'),
-    ('ShaderNodeOctVertexDisplacementMixerTex', 'ShaderNodeOctVertexDisplacementMixerTex', 'ShaderNodeOctVertexDisplacementMixerTex'),
-    ('ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex'),
-    ('ShaderNodeOctVolumeRampTex', 'ShaderNodeOctVolumeRampTex', 'ShaderNodeOctVolumeRampTex'),
-    ('ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex'),
-    ('ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex'),
-    ('ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex'),
-    ('ShaderNodeOctImageTex', 'ShaderNodeOctImageTex', 'ShaderNodeOctImageTex'),
-    ('ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex'),
-    ('ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex'),
-    ('ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex'),
     
 )
 octane_textureprocedural_node_layout = (
@@ -2076,6 +2033,7 @@ class NWSwitchNodeType(Operator, NWBase):
         list(octane_shader_node_layout) +
         list(octane_layers_node_layout) +
         list(octane_textures_node_layout) +
+        list(octane_texturetools_node_layout) +        
         list(octane_textureprocedural_node_layout) +
         list(octane_emission_node_layout) +
         list(octane_mediums_node_layout) +
