@@ -19,12 +19,12 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
     "warning": "",
-    "doc_url": "{BLENDER_MANUAL_URL}/addons/node/node_wrangler.html",
+    "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
     "category": "Node",
 }
 
@@ -113,6 +113,139 @@ shaders_input_nodes_props = (
     ('ShaderNodeWireframe', 'WIREFRAME', 'Wireframe'),
 
 )
+
+octane_shader_node_layout = (
+    ('ShaderNodeOctDiffuseMat', 'ShaderNodeOctDiffuseMat', 'DiffuseMat'),
+    ('ShaderNodeOctGlossyMat', 'ShaderNodeOctGlossyMat', 'GlossyMat'),
+    ('ShaderNodeOctSpecularMat', 'ShaderNodeOctSpecularMat', 'SpecularMat'),
+    ('ShaderNodeOctMixMat', 'ShaderNodeOctMixMat', 'MixMat'),
+    ('ShaderNodeOctPortalMat', 'ShaderNodeOctPortalMat', 'PortalMat'),
+    ('ShaderNodeOctShadowCatcherMat', 'ShaderNodeOctShadowCatcherMat', 'ShadowCatcherMat'),
+    ('ShaderNodeOctToonMat', 'ShaderNodeOctToonMat', 'ToonMat'),
+    ('ShaderNodeOctMetalMat', 'ShaderNodeOctMetalMat', 'MetalMat'),
+    ('ShaderNodeOctUniversalMat', 'ShaderNodeOctUniversalMat', 'UniversalMat'),
+    ('ShaderNodeOctLayeredMat', 'ShaderNodeOctLayeredMat', 'LayeredMat'),
+    ('ShaderNodeOctCompositeMat', 'ShaderNodeOctCompositeMat', 'CompositeMat'),
+    ('ShaderNodeOctHairMat', 'ShaderNodeOctHairMat', 'HairMat'),
+
+)
+octane_layers_node_layout = (
+    ('ShaderNodeOctGroupLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
+    ('ShaderNodeOctDiffuseLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
+    ('ShaderNodeOctMetallicLayer', 'ShaderNodeOctMetallicLayer', 'MetallicLayer'),
+    ('ShaderNodeOctSheenLayer', 'ShaderNodeOctSheenLayer', 'SheenLayer'),
+    ('ShaderNodeOctSpecularLayer', 'ShaderNodeOctSpecularLayer', 'SpecularLayer'),
+
+)
+octane_textures_node_layout = (
+    ('ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex', 'GaussSpectrumTex'),
+    ('ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex', 'RGBSpectrumTex'),
+    ('ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex', 'AlphaImageTex'),
+    ('ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex', 'FloatImageTex'),
+    ('ShaderNodeOctImageTex', 'ShaderNodeOctImageTex', 'ImageTex'),
+    ('ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex', 'ImageTileTex'),
+    ('ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex', 'InstanceColorTex'),
+    
+)
+octane_textureprocedural_node_layout = (
+    ('ShaderNodeOctChecksTex', 'ShaderNodeOctChecksTex', 'ChecksTex'),
+    ('ShaderNodeOctDirtTex', 'ShaderNodeOctDirtTex', 'DirtTex'),
+    ('ShaderNodeOctFloatTex', 'ShaderNodeOctFloatTex', 'FloatTex'),
+    ('ShaderNodeOctMarbleTex', 'ShaderNodeOctMarbleTex', 'MarbleTex'),
+    ('ShaderNodeOctNoiseTex', 'ShaderNodeOctNoiseTex', 'NoiseTex'),
+    ('ShaderNodeOctOSLTex', 'ShaderNodeOctOSLTex', 'OSLTex'),
+    ('ShaderNodeOctPolygonSideTex', 'ShaderNodeOctPolygonSideTex', 'PolygonSideTex'),
+    ('ShaderNodeOctRandomColorTex', 'ShaderNodeOctRandomColorTex', 'RandomColorTex'),
+    ('ShaderNodeOctRidgedFractalTex', 'ShaderNodeOctRidgedFractalTex', 'RidgedFractalTex'),
+    ('ShaderNodeOctTriplanarTex', 'ShaderNodeOctTriplanarTex', 'TriplanarTex'),
+    ('ShaderNodeOctSawWaveTex', 'ShaderNodeOctSawWaveTex', 'SawWaveTex'),
+    ('ShaderNodeOctSineWaveTex', 'ShaderNodeOctSineWaveTex', 'SineWaveTex'),
+    ('ShaderNodeOctTriWaveTex', 'ShaderNodeOctTriWaveTex', 'TriWaveTex'),
+    ('ShaderNodeOctTurbulenceTex', 'ShaderNodeOctTurbulenceTex', 'TurbulenceTex'),
+    ('ShaderNodeOctUVWTransformTex', 'ShaderNodeOctUVWTransformTex', 'UVWTransformTex'),
+    ('ShaderNodeOctWTex', 'ShaderNodeOctWTex', 'WTex'),
+    ('ShaderNodeOctFloatVertexTex', 'ShaderNodeOctFloatVertexTex', 'FloatVertexTex'),
+    ('ShaderNodeOctColorVertexTex', 'ShaderNodeOctColorVertexTex', 'ColorVertexTex'),
+
+)
+
+octane_texturetools_node_layout = (
+    ('ShaderNodeOctAddTex', 'ShaderNodeOctAddTex', 'AddTex'),
+    ('ShaderNodeOctBakingTex', 'ShaderNodeOctBakingTex', 'BakingTex'),
+    ('ShaderNodeOctClampTex', 'ShaderNodeOctClampTex', 'ClampTex'),
+    ('ShaderNodeOctColorCorrectTex', 'ShaderNodeOctColorCorrectTex', 'ColorCorrectTex'),
+    ('ShaderNodeOctCompareTex', 'ShaderNodeOctCompareTex', 'CompareTex'),
+    ('ShaderNodeOctCosineMixTex', 'ShaderNodeOctCosineMixTex', 'CosineMixTex'),
+    ('ShaderNodeOctFalloffTex', 'ShaderNodeOctFalloffTex', 'FalloffTex'),
+    ('ShaderNodeOctGradientTex', 'ShaderNodeOctGradientTex', 'GradientTex'),
+    ('ShaderNodeOctInstanceRangeTex', 'ShaderNodeOctInstanceRangeTex', 'InstanceRangeTex'),
+    ('ShaderNodeOctInvertTex', 'ShaderNodeOctInvertTex', 'InvertTex'),
+    ('ShaderNodeOctMixTex', 'ShaderNodeOctMixTex', 'MixTex'),
+    ('ShaderNodeOctMultiplyTex', 'ShaderNodeOctMultiplyTex', 'MultiplyTex'),
+    ('ShaderNodeOctSubtractTex', 'ShaderNodeOctSubtractTex', 'SubtractTex'),
+    ('ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex', 'ToonRampTex'),
+    ('ShaderNodeOctVolumeRampTex', 'ShaderNodeOctVolumeRampTex', 'VolumeRampTex'),
+    ('ShaderNodeOctDisplacementTex', 'ShaderNodeOctDisplacementTex', 'DisplacementTex'),
+    ('ShaderNodeOctVertexDisplacementTex', 'ShaderNodeOctVertexDisplacementTex', 'VertexDisplacementTex'),
+    ('ShaderNodeOctVertexDisplacementMixerTex', 'ShaderNodeOctVertexDisplacementMixerTex', 'VertexDisplacementMixerTex'),
+
+)
+octane_emission_node_layout = (
+    ('ShaderNodeOctBlackBodyEmission', 'ShaderNodeOctBlackBodyEmission', 'BlackBodyEmission'),
+    ('ShaderNodeOctTextureEmission', 'ShaderNodeOctTextureEmission', 'TextureEmission'),
+    ('ShaderNodeOctToonDirectionLight', 'ShaderNodeOctToonDirectionLight', 'ToonDirectionLight'),
+    ('ShaderNodeOctToonPointLight', 'ShaderNodeOctToonPointLight', 'ToonPointLight'),
+
+)
+octane_mediums_node_layout = (
+    ('ShaderNodeOctAbsorptionMedium', 'ShaderNodeOctAbsorptionMedium', 'AbsorptionMedium'),
+    ('ShaderNodeOctScatteringMedium', 'ShaderNodeOctScatteringMedium', 'ScatteringMedium'),
+    ('ShaderNodeOctVolumeMedium', 'ShaderNodeOctVolumeMedium', 'VolumeMedium'),
+    ('ShaderNodeOctRandomWalkMedium', 'ShaderNodeOctRandomWalkMedium', 'RandomWalkMedium'),
+
+)
+octane_transfroms_node_layout = (
+    ('ShaderNodeOctScaleTransform', 'ShaderNodeOctScaleTransform', 'ScaleTransform'),
+    ('ShaderNodeOctRotateTransform', 'ShaderNodeOctRotateTransform', 'RotateTransform'),
+    ('ShaderNodeOctFullTransform', 'ShaderNodeOctFullTransform', 'FullTransform'),
+    ('ShaderNodeOct2DTransform', 'ShaderNodeOct2DTransform', '2DTransform'),
+    ('ShaderNodeOct3DTransform', 'ShaderNodeOct3DTransform', '3DTransform'),
+
+)
+octane_projections_node_layout = (
+    ('ShaderNodeOctBoxProjection', 'ShaderNodeOctBoxProjection', 'BoxProjection'),
+    ('ShaderNodeOctCylProjection', 'ShaderNodeOctCylProjection', 'CylProjection'),
+    ('ShaderNodeOctPerspProjection', 'ShaderNodeOctPerspProjection', 'PerspProjection'),
+    ('ShaderNodeOctSphericalProjection', 'ShaderNodeOctSphericalProjection', 'SphericalProjection'),
+    ('ShaderNodeOctUVWProjection', 'ShaderNodeOctUVWProjection', 'UVWProjection'),
+    ('ShaderNodeOctXYZProjection', 'ShaderNodeOctXYZProjection', 'XYZProjection'),
+    ('ShaderNodeOctTriplanarProjection', 'ShaderNodeOctTriplanarProjection', 'TriplanarProjection'),
+    ('ShaderNodeOctOSLUVProjection', 'ShaderNodeOctOSLUVProjection', 'OSLUVProjection'),
+    ('ShaderNodeOctOSLProjection', 'ShaderNodeOctOSLProjection', 'OSLProjection'),
+
+)
+octane_values_node_layout = (
+    ('ShaderNodeOctFloatValue', 'ShaderNodeOctFloatValue', 'FloatValue'),
+    ('ShaderNodeOctIntValue', 'ShaderNodeOctIntValue', 'IntValue'),
+    ('ShaderNodeOctSunDirectionValue', 'ShaderNodeOctSunDirectionValue', 'SunDirectionValue'),
+    ('ShaderNodeOctTextureReferenceValue', 'ShaderNodeOctTextureReferenceValue', 'TextureReferenceValue'),
+)
+octane_cameras_node_layout = (
+    ('ShaderNodeOctOSLCamera', 'ShaderNodeOctOSLCamera', 'OSLCamera'),
+    ('ShaderNodeOctOSLBakingCamera', 'ShaderNodeOctOSLBakingCamera', 'OSLBakingCamera'),
+)
+octane_vectrons_node_layout = (
+    ('ShaderNodeOctVectron', 'ShaderNodeOctVectron', 'Vectron'),
+)
+octane_roundedges_node_layout = (
+    ('ShaderNodeOctRoundEdges', 'ShaderNodeOctRoundEdges', 'RoundEdges'),
+)
+octane_enviroment_node_layout = (
+    ('ShaderNodeOctTextureEnvironment', 'ShaderNodeOctTextureEnvironment', 'TextureEnvironment'),
+    ('ShaderNodeOctDaylightEnvironment', 'ShaderNodeOctDaylightEnvironment', 'DaylightEnvironment'),
+    ('ShaderNodeOctPlanetaryEnvironment', 'ShaderNodeOctPlanetaryEnvironment', 'PlanetaryEnvironment'),
+)
+
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
 # Keeping things in alphabetical orde so we don't need to sort later.
@@ -1896,7 +2029,21 @@ class NWSwitchNodeType(Operator, NWBase):
         list(texture_textures_nodes_props) +
         list(texture_converter_nodes_props) +
         list(texture_distort_nodes_props) +
-        list(texture_layout_nodes_props)
+        list(texture_layout_nodes_props) +
+        list(octane_shader_node_layout) +
+        list(octane_layers_node_layout) +
+        list(octane_textures_node_layout) +
+        list(octane_texturetools_node_layout) +        
+        list(octane_textureprocedural_node_layout) +
+        list(octane_emission_node_layout) +
+        list(octane_mediums_node_layout) +
+        list(octane_transfroms_node_layout) +
+        list(octane_projections_node_layout) +
+        list(octane_values_node_layout) +
+        list(octane_cameras_node_layout) +
+        list(octane_vectrons_node_layout) +
+        list(octane_roundedges_node_layout) +
+        list(octane_enviroment_node_layout)
     )
 
     def execute(self, context):
@@ -1909,6 +2056,7 @@ class NWSwitchNodeType(Operator, NWBase):
                          'show_options', 'show_preview', 'show_texture',
                          'use_alpha', 'use_clamp', 'use_custom_color', 'location'
                          )
+        print("test")
         selected = [n for n in nodes if n.select]
         reselect = []
         for node in [n for n in selected if
@@ -4137,6 +4285,20 @@ class NWSwitchNodeTypeMenu(Menu, NWBase):
             layout.menu(NWSwitchShadersVectorSubmenu.bl_idname)
             layout.menu(NWSwitchShadersConverterSubmenu.bl_idname)
             layout.menu(NWSwitchShadersLayoutSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneShaderSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneLayersSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneProceduralSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneTextureSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneToolSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneEmissionSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneMediumSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneTransformSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneProjectionSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneValueSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneCameraSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneVectronSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneRoundEdgesSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneEnviromentSubmenu.bl_idname)
         if tree.type == 'COMPOSITING':
             layout.menu(NWSwitchCompoInputSubmenu.bl_idname)
             layout.menu(NWSwitchCompoOutputSubmenu.bl_idname)
@@ -4167,6 +4329,147 @@ class NWSwitchShadersInputSubmenu(Menu, NWBase):
         for ident, node_type, rna_name in shaders_input_nodes_props:
             props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
             props.to_type = ident
+
+class NWSwitchShadersOctaneShaderSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_shader_submenu"
+    bl_label = "Octane Shader"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_shader_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneLayersSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_layers_submenu"
+    bl_label = "Octane Layers"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_layers_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneProceduralSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_procedural_submenu"
+    bl_label = "Octane Procedural"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_textureprocedural_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneTextureSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_texture_submenu"
+    bl_label = "Octane Texture"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_textures_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneToolSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_tool_submenu"
+    bl_label = "Octane Tool"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_texturetools_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneEmissionSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_emission_submenu"
+    bl_label = "Octane Emission"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_emission_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneMediumSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_medium_submenu"
+    bl_label = "Octane Medium"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_mediums_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneTransformSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_transform_submenu"
+    bl_label = "Octane Transform"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_transfroms_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneProjectionSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_projection_submenu"
+    bl_label = "Octane Projection"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_projections_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneValueSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_value_submenu"
+    bl_label = "Octane Value"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_values_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneCameraSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_camera_submenu"
+    bl_label = "Octane Camera"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_cameras_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneVectronSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_vectron_submenu"
+    bl_label = "Octane Vectron"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_vectrons_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneRoundEdgesSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_roundedges_submenu"
+    bl_label = "Octane Round Edges"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_roundedges_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneEnviromentSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_enviroment_submenu"
+    bl_label = "Octane Enviroment"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_enviroment_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
 
 
 class NWSwitchShadersOutputSubmenu(Menu, NWBase):
@@ -4803,6 +5106,20 @@ classes = (
     NWVertColMenu,
     NWSwitchNodeTypeMenu,
     NWSwitchShadersInputSubmenu,
+    NWSwitchShadersOctaneShaderSubmenu,
+    NWSwitchShadersOctaneLayersSubmenu,
+    NWSwitchShadersOctaneProceduralSubmenu,
+    NWSwitchShadersOctaneTextureSubmenu,
+    NWSwitchShadersOctaneToolSubmenu,
+    NWSwitchShadersOctaneEmissionSubmenu,
+    NWSwitchShadersOctaneMediumSubmenu,
+    NWSwitchShadersOctaneTransformSubmenu,
+    NWSwitchShadersOctaneProjectionSubmenu,
+    NWSwitchShadersOctaneValueSubmenu,
+    NWSwitchShadersOctaneCameraSubmenu,
+    NWSwitchShadersOctaneVectronSubmenu,
+    NWSwitchShadersOctaneRoundEdgesSubmenu,
+    NWSwitchShadersOctaneEnviromentSubmenu,
     NWSwitchShadersOutputSubmenu,
     NWSwitchShadersShaderSubmenu,
     NWSwitchShadersTextureSubmenu,
