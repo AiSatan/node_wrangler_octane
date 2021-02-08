@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 2),
+    "version": (0, 3),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
@@ -2792,7 +2792,68 @@ class NWAddTextureSetup(Operator, NWBase):
                 valid = True
         return valid
 
+    def execute_octane(self, context):
+        nodes, links = get_nodes_links(context)
+        shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
+        texture_types = [x[1] for x in octane_textures_node_layout]
+        selected_nodes = [n for n in nodes if n.select]
+        for t_node in selected_nodes:
+            valid = False
+            input_index = 0
+            if t_node.inputs:
+                for index, i in enumerate(t_node.inputs):
+                    if not i.is_linked:
+                        valid = True
+                        input_index = index
+                        break
+            if valid:
+                locx = t_node.location.x
+                locy = t_node.location.y - t_node.dimensions.y/2
+                xoffset = [500, 700]
+                is_texture = False
+                if t_node.bl_idname in texture_types:
+                    xoffset = [290, 500]
+                    is_texture = True
+                coordout = 2
+                image_type = 'ShaderNodeOctImageTex'
+
+                if (t_node.type in texture_types and t_node.type != 'TEX_IMAGE') or (t_node.type == 'BACKGROUND'):
+                    coordout = 0  # image texture uses UVs, procedural textures and Background shader use Generated
+                    if t_node.type == 'BACKGROUND':
+                        image_type = 'ShaderNodeTexEnvironment'
+
+                if not is_texture:
+                    tex = nodes.new(image_type)
+                    tex.location = [locx - 200, locy + 112]
+                    nodes.active = tex
+                    links.new(tex.outputs[0], t_node.inputs[1])
+
+                t_node.select = False
+                if self.add_mapping or is_texture:
+                    if t_node.bl_idname != 'ShaderNodeOctUVWProjection':
+                        m = nodes.new('ShaderNodeOctFullTransform')
+                        m.location = [locx - xoffset[0], locy + 141]
+                        m.width = 240
+                    else:
+                        m = t_node
+                    coord = nodes.new('ShaderNodeOctUVWProjection')
+                    coord.location = [locx - (200 if t_node.type == 'MAPPING' else xoffset[1]), locy + 124]
+
+                    if not is_texture:
+                        links.new(m.outputs[0], tex.inputs[4])
+                        links.new(coord.outputs[0], tex.inputs[5])
+                    else:
+                        nodes.active = m
+                        links.new(m.outputs[0], t_node.inputs[4])
+                        links.new(coord.outputs[0], t_node.inputs[5])
+            else:
+                self.report({'WARNING'}, "No free inputs for node: "+t_node.name)
+        return {'FINISHED'}
+
     def execute(self, context):
+        if context.scene.render.engine == 'octane':
+            return self.execute_octane(context)
+
         nodes, links = get_nodes_links(context)
         shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
         texture_types = [x[1] for x in shaders_texture_nodes_props]
