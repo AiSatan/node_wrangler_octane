@@ -16,8 +16,10 @@ Be free to leave any feedback or feature request.
 This plugin still can be used with cycle/eevee, it doesn't override any of default methods.
 
 # Installation
-Please, disable your node_wrangler before instaling this one.
+__Important: please, disable your node_wrangler before instaling this one.__
+Just uncheck it so no conflict will happen
 Install just like any other plugin.
+
 Video example: 
 https://www.youtube.com/watch?v=UCu5GEpEkL0
 
