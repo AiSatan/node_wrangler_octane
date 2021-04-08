@@ -18,12 +18,12 @@ This plugin still can be used with cycle/eevee, it doesn't override any of defau
 # Installation
 __Important: please, disable your node_wrangler before instaling this one.__
 Just uncheck it so no conflict will happen
-Install just like any other plugin.
+Install in blender just like any other plugin.
 
 Video example: 
 https://www.youtube.com/watch?v=UCu5GEpEkL0
 
-You can download the latest release here:
+You can download the latest release here(you will need to unzip it to install or jsut download .py version):
 https://github.com/AiSatan/node_wrangler_octane/releases
 
 
