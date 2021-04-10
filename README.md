@@ -6,7 +6,7 @@ Some of the features so far..:
 - viewer node / cntrl+shft+click on any node to add viewer node
 - full transform&uwp projectile / ctrl+t
 - switch-type-to / shift+s
-- shader's texture setup for octane / ctrl+shift+t on shader node
+- shader's texture setup for octane / ctrl+shift+t on shader node - https://youtu.be/SON0bUczSf0
 
 //not here yet, but soon
 - //working on lazy mix / ctrl+shift+rmb
@@ -25,7 +25,7 @@ Install in blender just like any other plugin.
 Video example: 
 https://www.youtube.com/watch?v=UCu5GEpEkL0
 
-You can download the latest release here(you will need to unzip it to install or jsut download .py version):
+You can download the latest release here(you will need to unzip it to install or just download .py file):
 https://github.com/AiSatan/node_wrangler_octane/releases
 
 
