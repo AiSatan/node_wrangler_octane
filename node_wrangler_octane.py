@@ -3082,7 +3082,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 disp_node.location = active_node.location + Vector((-200, -1110))
                 link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
                 # change def height
-                disp_node.inputs[1].default_value = 0.01
+                disp_node.inputs[1].default_value = 0.001
 
                 # TODO Turn on true displacement in the material
                 # Too complicated for now
