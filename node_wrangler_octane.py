@@ -3022,6 +3022,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         socketnames = [
         ['Displacement', tags.displacement.split(' '), None],
         ['Albedo color', tags.base_color.split(' '), None],
+        ['Albedo', tags.base_color.split(' '), None],
         ['Diffuse', tags.base_color.split(' '), None],
         ['Medium', tags.sss_color.split(' '), None],
         ['Metallic', tags.metallic.split(' '), None],
@@ -3069,6 +3070,8 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         roughness_node = None
         for i, sname in enumerate(socketnames):
             print(i, sname[0], sname[2])
+            if not sname[0] in active_node.inputs:
+                continue
 
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
@@ -3096,47 +3099,47 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                         link = links.new(active_node.inputs[sname[0]], disp_node.outputs[0])
 
                 continue
-            if sname[0] in active_node.inputs:
-                if not active_node.inputs[sname[0]].is_linked:
-                    # No texture node connected -> add texture node with new image
-                    texture_node = nodes.new(type='ShaderNodeOctImageTex')
-                    img = bpy.data.images.load(path.join(import_path, sname[2]))
-                    texture_node.image = img
 
-                    # NORMAL NODES
-                    if sname[0] == 'Normal':
-                        link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
-                        normal_node_texture = texture_node
+            if not active_node.inputs[sname[0]].is_linked:
+                # No texture node connected -> add texture node with new image
+                texture_node = nodes.new(type='ShaderNodeOctImageTex')
+                img = bpy.data.images.load(path.join(import_path, sname[2]))
+                texture_node.image = img
 
-                    elif sname[0] == 'Roughness':
-                        # Test if glossy or roughness map
-                        fname_components = split_into__components(sname[2])
-                        match_rough = set(rough_abbr).intersection(set(fname_components))
-                        match_gloss = set(gloss_abbr).intersection(set(fname_components))
+                # NORMAL NODES
+                if sname[0] == 'Normal':
+                    link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+                    normal_node_texture = texture_node
 
-                        if match_rough:
-                            # If Roughness nothing to to
-                            link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+                elif sname[0] == 'Roughness':
+                    # Test if glossy or roughness map
+                    fname_components = split_into__components(sname[2])
+                    match_rough = set(rough_abbr).intersection(set(fname_components))
+                    match_gloss = set(gloss_abbr).intersection(set(fname_components))
 
-                        elif match_gloss:
-                            # If Gloss Map add invert node
-                            invert_node = nodes.new(type='ShaderNodeOctInvertTex')
-                            link = links.new(invert_node.inputs[0], texture_node.outputs[0])
-
-                            link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
-                            roughness_node = texture_node
-
-                    else:
-                        # This is a simple connection Texture --> Input slot
+                    if match_rough:
+                        # If Roughness nothing to to
                         link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
 
-                    # Use non-color for all but 'Albedo color' Textures
-                    #if not sname[0] in ['Albedo color'] and texture_node.image:
-                        #texture_node.image.colorspace_settings.is_data = True
+                    elif match_gloss:
+                        # If Gloss Map add invert node
+                        invert_node = nodes.new(type='ShaderNodeOctInvertTex')
+                        link = links.new(invert_node.inputs[0], texture_node.outputs[0])
+
+                        link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
+                        roughness_node = texture_node
 
                 else:
-                    # If already texture connected. add to node list for alignment
-                    texture_node = active_node.inputs[sname[0]].links[0].from_node
+                    # This is a simple connection Texture --> Input slot
+                    link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+
+                # Use non-color for all but 'Albedo color' Textures
+                #if not sname[0] in ['Albedo color'] and texture_node.image:
+                    #texture_node.image.colorspace_settings.is_data = True
+
+            else:
+                # If already texture connected. add to node list for alignment
+                texture_node = active_node.inputs[sname[0]].links[0].from_node
 
             if texture_node is not None:
                 # This are all connected texture nodes
