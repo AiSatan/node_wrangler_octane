@@ -1,7 +1,7 @@
 # node_wrangler_octane
 This is the same node_wrangler like in your blender, but with little changes to support octane shaders instead of blenders.
 
-Some of the features so far..:
+Features so far..:
 
 - viewer node / cntrl+shft+click on any node to add viewer node
 - full transform&uwp projectile / select texture node and ctrl+t
