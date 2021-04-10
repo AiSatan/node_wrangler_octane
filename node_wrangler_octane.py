@@ -3069,7 +3069,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
             print(i, sname[0], sname[2])
 
             # DISPLACEMENT NODES
-            if sname[0] == 'Displacement2':
+            if sname[0] == 'Displacement':
                 disp_texture = nodes.new(type='ShaderNodeOctImageTex')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 disp_texture.image = img
@@ -3081,6 +3081,8 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 disp_node = nodes.new(type='ShaderNodeOctVertexDisplacementTex')
                 disp_node.location = active_node.location + Vector((-200, -1110))
                 link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
+                # change def height
+                disp_node.inputs[1].default_value = 0.01
 
                 # TODO Turn on true displacement in the material
                 # Too complicated for now
@@ -3089,7 +3091,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 output_node = [n for n in nodes if n.bl_idname == 'ShaderNodeOutputMaterial']
                 if output_node:
                     if not output_node[0].inputs[2].is_linked:
-                        link = links.new(output_node[0].inputs[2], disp_node.outputs[0])
+                        link = links.new(active_node.inputs[sname[0]], disp_node.outputs[0])
 
                 continue
             if not active_node.inputs[sname[0]].is_linked:
