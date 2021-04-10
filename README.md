@@ -4,8 +4,8 @@ This is the same node_wrangler like in your blender, but with little changes to 
 Some of the features so far..:
 
 - viewer node / cntrl+shft+click on any node to add viewer node
-- full transform&uwp projectile / ctrl+t
-- switch-type-to / shift+s
+- full transform&uwp projectile / select texture node and ctrl+t
+- switch-type-to / select node and shift+s
 - shader's texture setup for octane / ctrl+shift+t on shader node - https://youtu.be/SON0bUczSf0
 
 //not here yet, but soon
