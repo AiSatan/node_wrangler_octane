@@ -6,9 +6,9 @@ Some of the features so far..:
 - viewer node / cntrl+shft+click on any node to add viewer node
 - full transform&uwp projectile / ctrl+t
 - switch-type-to / shift+s
+- shader's texture setup for octane / ctrl+shift+t on shader node
 
-//not here yet but in pre-release
-- //working on texture setup for octane shaders / ctrl+shift+t
+//not here yet, but soon
 - //working on lazy mix / ctrl+shift+rmb
 
 this plugin behave as octane one __only if your renderer set to octane__, you can change renderer to eevee/cycle to work as default one.
