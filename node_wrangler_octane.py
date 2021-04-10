@@ -3118,7 +3118,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                     elif match_gloss:
                         # If Gloss Map add invert node
                         invert_node = nodes.new(type='ShaderNodeOctInvertTex')
-                        link = links.new(invert_node.inputs[1], texture_node.outputs[0])
+                        link = links.new(invert_node.inputs[0], texture_node.outputs[0])
 
                         link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
                         roughness_node = texture_node
