@@ -28,4 +28,7 @@ https://github.com/AiSatan/node_wrangler_octane/releases
 
 
 # Support
-Please, let me know if you notice any unexpected behavior/feedback, be free to create and an issue, I will try to figure out. 
+Please, let me know if you notice any unexpected behavior/feedback, be free to create an issue, I will try to figure out. 
+
+# Support+
+If you feel like spending money to help, any donation are appreciated by this link and will literaly make our lives better: https://www.blender.org/foundation/donation-payment/
