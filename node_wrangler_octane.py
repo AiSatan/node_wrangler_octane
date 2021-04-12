@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 5),
+    "version": (0, 6),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
@@ -1238,6 +1238,14 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         ),
         default='CENTER',
         description="When merging nodes with the Ctrl+Numpad0 hotkey (and similar) specify the position of the new nodes")
+    texture_setup_displacement: EnumProperty(
+        name="Shader's texture setup displacement",
+        items=(
+            ("ShaderNodeOctDisplacementTex", "Texture Displacement node", "Setup node will use Texture Displacement node"),
+            ("ShaderNodeOctVertexDisplacementTex", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
+        ),
+        default='ShaderNodeOctDisplacementTex',
+        description="When setup textures for shader, for displacement it'll use this node")
 
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
@@ -1261,6 +1269,7 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         col = layout.column()
         col.prop(self, "merge_position")
         col.prop(self, "merge_hide")
+        col.prop(self, "texture_setup_displacement")
 
         box = layout.box()
         col = box.column(align=True)
@@ -2343,17 +2352,42 @@ class NWMergeNodes(Operator, NWBase):
                     the_range = 1
                 for i in range(the_range):
                     if nodes_list == selected_mix:
-                        add_type = node_type + 'MixRGB'
-                        add = nodes.new(add_type)
-                        add.blend_type = mode
-                        if mode != 'MIX':
-                            add.inputs[0].default_value = 1.0
+                        add = None
+                        if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                            if mode == 'ADD':
+                                add_type = node_type + 'OctAddTex'
+                                first = 0
+                                second = 1
+                            elif mode == 'MIX':
+                                add_type = node_type + 'OctMixTex'
+                                first = 1
+                                second = 2
+                            elif mode == 'SUBTRACT':
+                                add_type = node_type + 'OctSubtractTex'
+                                first = 0
+                                second = 1
+                            elif mode == 'MULTIPLY':
+                                add_type = node_type + 'OctMultiplyTex'
+                                first = 0
+                                second = 1
+                            elif mode == 'DIVIDE':
+                                add_type = node_type + 'OctCosineMixTex'
+                                first = 1
+                                second = 2
+                            add = nodes.new(add_type)
+                        else:
+                            add_type = node_type + 'MixRGB'
+                            add = nodes.new(add_type)
+                            add.blend_type = mode
+                            first = 1
+                            second = 2
+                            if mode != 'MIX':
+                                add.inputs[0].default_value = 1.0
                         add.show_preview = False
                         add.hide = do_hide
                         if do_hide:
                             loc_y = loc_y - 50
-                        first = 1
-                        second = 2
+
                         add.width_hidden = 100.0
                     elif nodes_list == selected_math:
                         add_type = node_type + 'Math'
@@ -2367,7 +2401,10 @@ class NWMergeNodes(Operator, NWBase):
                         add.width_hidden = 100.0
                     elif nodes_list == selected_shader:
                         if mode == 'MIX':
-                            add_type = node_type + 'MixShader'
+                            if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                                add_type = node_type + 'OctMixMat'
+                            else:
+                                add_type = node_type + 'MixShader'
                             add = nodes.new(add_type)
                             add.hide = do_hide_shader
                             if do_hide_shader:
@@ -2376,7 +2413,10 @@ class NWMergeNodes(Operator, NWBase):
                             second = 2
                             add.width_hidden = 100.0
                         elif mode == 'ADD':
-                            add_type = node_type + 'AddShader'
+                            if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                                add_type = node_type + 'OctLayeredMat'
+                            else:
+                                add_type = node_type + 'AddShader'
                             add = nodes.new(add_type)
                             add.hide = do_hide_shader
                             if do_hide_shader:
@@ -2551,7 +2591,7 @@ class NWChangeMixFactor(Operator, NWBase):
         selected = []  # entry = index
         for si, node in enumerate(nodes):
             if node.select:
-                if node.type in {'MIX_RGB', 'MIX_SHADER'}:
+                if node.type in {'MIX_RGB', 'MIX_SHADER', 'OCT_MIX_TEX', 'OCT_MIX_MAT', 'OCT_COSMIX_TEX'}:
                     selected.append(si)
 
         for si in selected:
@@ -3069,7 +3109,6 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         normal_node = None
         roughness_node = None
         for i, sname in enumerate(socketnames):
-            print(i, sname[0], sname[2])
             if not sname[0] in active_node.inputs:
                 continue
 
@@ -3083,11 +3122,10 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 #    disp_texture.image.colorspace_settings.is_data = True
 
                 # Add displacement offset nodes
-                disp_node = nodes.new(type='ShaderNodeOctVertexDisplacementTex')
+                settings = context.preferences.addons[__name__].preferences
+                disp_node = nodes.new(type=settings.texture_setup_displacement)
                 disp_node.location = active_node.location + Vector((-200, -1110))
                 link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
-                # change def height
-                disp_node.inputs[1].default_value = 0.001
 
                 # TODO Turn on true displacement in the material
                 # Too complicated for now
@@ -3286,8 +3324,6 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         normal_node = None
         roughness_node = None
         for i, sname in enumerate(socketnames):
-            print(i, sname[0], sname[2])
-
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
                 disp_texture = nodes.new(type='ShaderNodeTexImage')
