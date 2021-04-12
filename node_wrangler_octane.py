@@ -2351,7 +2351,6 @@ class NWMergeNodes(Operator, NWBase):
                 if len(nodes_list) == 1:
                     the_range = 1
                 for i in range(the_range):
-                    print(mode)
                     if nodes_list == selected_mix:
                         add = None
                         if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
@@ -2391,7 +2390,6 @@ class NWMergeNodes(Operator, NWBase):
 
                         add.width_hidden = 100.0
                     elif nodes_list == selected_math:
-                        print(mode)
                         add_type = node_type + 'Math'
                         add = nodes.new(add_type)
                         add.operation = mode
@@ -2593,7 +2591,6 @@ class NWChangeMixFactor(Operator, NWBase):
         selected = []  # entry = index
         for si, node in enumerate(nodes):
             if node.select:
-                print(node.type)
                 if node.type in {'MIX_RGB', 'MIX_SHADER', 'OCT_MIX_TEX', 'OCT_MIX_MAT', 'OCT_COSMIX_TEX'}:
                     selected.append(si)
 
@@ -3112,7 +3109,6 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         normal_node = None
         roughness_node = None
         for i, sname in enumerate(socketnames):
-            print(i, sname[0], sname[2])
             if not sname[0] in active_node.inputs:
                 continue
 
@@ -3328,8 +3324,6 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         normal_node = None
         roughness_node = None
         for i, sname in enumerate(socketnames):
-            print(i, sname[0], sname[2])
-
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
                 disp_texture = nodes.new(type='ShaderNodeTexImage')
