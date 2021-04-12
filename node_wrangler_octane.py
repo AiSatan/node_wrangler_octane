@@ -2593,7 +2593,8 @@ class NWChangeMixFactor(Operator, NWBase):
         selected = []  # entry = index
         for si, node in enumerate(nodes):
             if node.select:
-                if node.type in {'MIX_RGB', 'MIX_SHADER'}:
+                print(node.type)
+                if node.type in {'MIX_RGB', 'MIX_SHADER', 'OCT_MIX_TEX', 'OCT_MIX_MAT', 'OCT_COSMIX_TEX'}:
                     selected.append(si)
 
         for si in selected:
