@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 5),
+    "version": (0, 6),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
@@ -1238,6 +1238,14 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         ),
         default='CENTER',
         description="When merging nodes with the Ctrl+Numpad0 hotkey (and similar) specify the position of the new nodes")
+    texture_setup_displacement: EnumProperty(
+        name="Shader's texture setup displacement",
+        items=(
+            ("ShaderNodeOctDisplacementTex", "Texture Displacement node", "Setup node will use Texture Displacement node"),
+            ("ShaderNodeOctVertexDisplacementTex", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
+        ),
+        default='ShaderNodeOctDisplacementTex',
+        description="When setup textures for shader, for displacement it'll use this node")
 
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
@@ -1261,6 +1269,7 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         col = layout.column()
         col.prop(self, "merge_position")
         col.prop(self, "merge_hide")
+        col.prop(self, "texture_setup_displacement")
 
         box = layout.box()
         col = box.column(align=True)
@@ -3083,11 +3092,10 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 #    disp_texture.image.colorspace_settings.is_data = True
 
                 # Add displacement offset nodes
-                disp_node = nodes.new(type='ShaderNodeOctVertexDisplacementTex')
+                settings = context.preferences.addons[__name__].preferences
+                disp_node = nodes.new(type=settings.texture_setup_displacement)
                 disp_node.location = active_node.location + Vector((-200, -1110))
                 link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
-                # change def height
-                disp_node.inputs[1].default_value = 0.001
 
                 # TODO Turn on true displacement in the material
                 # Too complicated for now
