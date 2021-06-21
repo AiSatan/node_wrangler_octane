@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 6),
+    "version": (0, 7),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
@@ -2836,6 +2836,7 @@ class NWAddTextureSetup(Operator, NWBase):
         nodes, links = get_nodes_links(context)
         shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
         texture_types = [x[1] for x in octane_textures_node_layout]
+        procedural_types = [x[1] for x in octane_textureprocedural_node_layout]
         selected_nodes = [n for n in nodes if n.select]
         for t_node in selected_nodes:
             valid = False
@@ -2851,9 +2852,12 @@ class NWAddTextureSetup(Operator, NWBase):
                 locy = t_node.location.y - t_node.dimensions.y/2
                 xoffset = [500, 700]
                 is_texture = False
-                if t_node.bl_idname in texture_types:
+                is_proc = False
+                if t_node.bl_idname in texture_types + procedural_types:
                     xoffset = [290, 500]
                     is_texture = True
+                    if t_node.bl_idname in procedural_types:
+                        is_proc = True
                 coordout = 2
                 image_type = 'ShaderNodeOctImageTex'
 
@@ -2884,8 +2888,12 @@ class NWAddTextureSetup(Operator, NWBase):
                         links.new(coord.outputs[0], tex.inputs[5])
                     else:
                         nodes.active = m
-                        links.new(m.outputs[0], t_node.inputs[4])
-                        links.new(coord.outputs[0], t_node.inputs[5])
+                        if is_proc:
+                            links.new(m.outputs[0], t_node.inputs[2])
+                            links.new(coord.outputs[0], t_node.inputs[3])
+                        else:
+                            links.new(m.outputs[0], t_node.inputs[4])
+                            links.new(coord.outputs[0], t_node.inputs[5])
             else:
                 self.report({'WARNING'}, "No free inputs for node: "+t_node.name)
         return {'FINISHED'}
@@ -3114,7 +3122,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
-                disp_texture = nodes.new(type='ShaderNodeOctImageTex')
+                disp_texture = nodes.new(type='ShaderNodeOctFloatImageTex')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 disp_texture.image = img
                 disp_texture.label = 'Displacement'
@@ -3140,7 +3148,12 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
             if not active_node.inputs[sname[0]].is_linked:
                 # No texture node connected -> add texture node with new image
-                texture_node = nodes.new(type='ShaderNodeOctImageTex')
+                texture_node = None
+
+                if sname[0] in ['Metallic', 'Roughness', 'Specular']:
+                    texture_node = nodes.new(type='ShaderNodeOctFloatImageTex')
+                else:
+                    texture_node = nodes.new(type='ShaderNodeOctImageTex')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 texture_node.image = img
 
