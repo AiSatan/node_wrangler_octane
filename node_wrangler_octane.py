@@ -3114,7 +3114,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
-                disp_texture = nodes.new(type='ShaderNodeOctImageTex')
+                disp_texture = nodes.new(type='ShaderNodeOctFloatImageTex')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 disp_texture.image = img
                 disp_texture.label = 'Displacement'
@@ -3140,7 +3140,12 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
             if not active_node.inputs[sname[0]].is_linked:
                 # No texture node connected -> add texture node with new image
-                texture_node = nodes.new(type='ShaderNodeOctImageTex')
+                texture_node = None
+
+                if sname[0] in ['Metallic', 'Roughness', 'Specular']:
+                    texture_node = nodes.new(type='ShaderNodeOctFloatImageTex')
+                else:
+                    texture_node = nodes.new(type='ShaderNodeOctImageTex')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 texture_node.image = img
 
