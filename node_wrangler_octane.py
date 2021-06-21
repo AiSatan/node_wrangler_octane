@@ -2889,8 +2889,21 @@ class NWAddTextureSetup(Operator, NWBase):
                     else:
                         nodes.active = m
                         if is_proc:
-                            links.new(m.outputs[0], t_node.inputs[2])
-                            links.new(coord.outputs[0], t_node.inputs[3])
+                            if 'Transform' in t_node.inputs:
+                                links.new(m.outputs[0], t_node.inputs['Transform'])
+                            else:
+                                # delete node
+                                t_node.select = False
+                                # only node is selected now
+                                bpy.ops.node.delete()
+
+                            if 'Projection' in t_node.inputs:
+                                links.new(coord.outputs[0], t_node.inputs['Projection'])
+                            else:
+                                # delete node
+                                t_node.select = False
+                                # only node is selected now
+                                bpy.ops.node.delete()
                         else:
                             links.new(m.outputs[0], t_node.inputs[4])
                             links.new(coord.outputs[0], t_node.inputs[5])
