@@ -18,8 +18,8 @@
 
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
-    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, Patched by AiSatan",
-    "version": (0, 7),
+    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
+    "version": (0, 8),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
@@ -1863,6 +1863,10 @@ class NWEmissionViewer(Operator, NWBase):
                             else:
                                 out_i = valid_outputs[0]
                 make_links = []  # store sockets for new links
+                for node in nodes:	
+                    if node.name == 'Oct Viewer Emission':	
+                            node.select = True	
+                            bpy.ops.node.delete()
                 if active.outputs:
                     # If output type not 'SHADER' - "Emission Viewer" needed
                     if active.outputs[out_i].type != 'SHADER':
@@ -1879,6 +1883,7 @@ class NWEmissionViewer(Operator, NWBase):
                             if context.scene.render.engine == 'octane':
                                 emission = nodes.new("ShaderNodeOctDiffuseMat")
                                 emission.label = "Octane Viewer"
+                                emission.inputs[0].default_value = (0, 0, 0, 1)  
                             else:
                                 emission = nodes.new(shader_viewer_ident)
                                 emission.label = "Cycle/Eevee Viewer"
@@ -1892,7 +1897,8 @@ class NWEmissionViewer(Operator, NWBase):
                             # End of the patch for Octane
                         else:
                             emission = emission_placeholder
-                        make_links.append((active.outputs[out_i], emission.inputs[0]))
+                        if context.scene.render.engine != 'octane':	
+                            make_links.append((active.outputs[out_i], emission.inputs[0]))
 
                         # If Viewer is connected to output by user, don't change those connections (patch by gandalf3)
                         if emission.outputs[0].links.__len__() > 0:
@@ -1910,6 +1916,18 @@ class NWEmissionViewer(Operator, NWBase):
                         intensity /= pow(2, (context.scene.view_settings.exposure))  # CM exposure is measured in stops/EVs (2^x)
                         emission.inputs[1].default_value = intensity
 
+                        if context.scene.render.engine == 'octane':	
+                            ExposureComp = nodes.new("ShaderNodeOctTextureEmission")	
+                            ExposureComp.label = "Octane Viewer"	
+                            ExposureComp.hide = True	
+                            ExposureComp.inputs[1].default_value = (1/context.scene.oct_view_cam.exposure)	
+                            ExposureComp.inputs[2].default_value = True	
+                            ExposureComp.inputs[8].default_value = False	
+                            ExposureComp.inputs[9].default_value = False	
+                            ExposureComp.location = [materialout.location.x, (materialout.location.y + 45)]	
+                            ExposureComp.name = "Oct Viewer Emission"	
+                            make_links.append((ExposureComp.outputs[0],emission.inputs[11]))	
+                            make_links.append((ExposureComp.inputs[0],active.outputs[0]))
                     else:
                         # Output type is 'SHADER', no Viewer needed. Delete Viewer if exists.
                         make_links.append((active.outputs[out_i], materialout.inputs[1 if active.outputs[out_i].name == "Volume" else 0]))
