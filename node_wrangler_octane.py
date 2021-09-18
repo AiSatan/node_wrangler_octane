@@ -3107,7 +3107,8 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         ['Metallic', tags.metallic.split(' '), None],
         ['Specular', tags.specular.split(' '), None],
         ['Roughness', rough_abbr + gloss_abbr, None],
-        ['Normal', normal_abbr + bump_abbr, None],
+        ['Normal', normal_abbr, None],
+        ['Bump', bump_abbr, None],
         ]
 
         # Look through texture_types and set value as filename of first matched file
