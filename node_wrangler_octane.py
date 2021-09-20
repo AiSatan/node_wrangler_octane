@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (0, 8),
+    "version": (0, 9),
     "blender": (2, 82, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
@@ -3107,7 +3107,8 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         ['Metallic', tags.metallic.split(' '), None],
         ['Specular', tags.specular.split(' '), None],
         ['Roughness', rough_abbr + gloss_abbr, None],
-        ['Normal', normal_abbr + bump_abbr, None],
+        ['Bump', bump_abbr, None],
+        ['Normal', normal_abbr, None],
         ]
 
         # Look through texture_types and set value as filename of first matched file
