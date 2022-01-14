@@ -117,36 +117,36 @@ shaders_input_nodes_props = (
 
 
 octane_shader_node_layout = (
-    ('ShaderNodeOctDiffuseMat', 'ShaderNodeOctDiffuseMat', 'DiffuseMat'),
-    ('ShaderNodeOctGlossyMat', 'ShaderNodeOctGlossyMat', 'GlossyMat'),
-    ('ShaderNodeOctSpecularMat', 'ShaderNodeOctSpecularMat', 'SpecularMat'),
-    ('ShaderNodeOctMixMat', 'ShaderNodeOctMixMat', 'MixMat'),
-    ('ShaderNodeOctPortalMat', 'ShaderNodeOctPortalMat', 'PortalMat'),
-    ('ShaderNodeOctShadowCatcherMat', 'ShaderNodeOctShadowCatcherMat', 'ShadowCatcherMat'),
-    ('ShaderNodeOctToonMat', 'ShaderNodeOctToonMat', 'ToonMat'),
-    ('ShaderNodeOctMetalMat', 'ShaderNodeOctMetalMat', 'MetalMat'),
-    ('ShaderNodeOctUniversalMat', 'ShaderNodeOctUniversalMat', 'UniversalMat'),
-    ('ShaderNodeOctLayeredMat', 'ShaderNodeOctLayeredMat', 'LayeredMat'),
-    ('ShaderNodeOctCompositeMat', 'ShaderNodeOctCompositeMat', 'CompositeMat'),
-    ('ShaderNodeOctHairMat', 'ShaderNodeOctHairMat', 'HairMat'),
+    ('OctaneClippingMaterial', 'OctaneClippingMaterial', 'OctaneClippingMaterial'),
+    ('OctaneCompositeMaterial', 'OctaneCompositeMaterial', 'OctaneCompositeMaterial'),
+    ('OctaneDiffuseMaterial', 'OctaneDiffuseMaterial', 'OctaneDiffuseMaterial'),
+    ('OctaneGlossyMaterial', 'OctaneGlossyMaterial', 'OctaneGlossyMaterial'),
+    ('OctaneHairMaterial', 'OctaneHairMaterial', 'OctaneHairMaterial'),
+    ('OctaneLayeredMaterial', 'OctaneLayeredMaterial', 'OctaneLayeredMaterial'),
+    ('OctaneMetallicMaterial', 'OctaneMetallicMaterial', 'OctaneMetallicMaterial'),
+    ('OctaneMixMaterial', 'OctaneMixMaterial', 'OctaneMixMaterial'),
+    ('OctaneNullMaterial', 'OctaneNullMaterial', 'OctaneNullMaterial'),
+    ('OctanePortalMaterial', 'OctanePortalMaterial', 'OctanePortalMaterial'),
+    ('OctaneShadowCatcherMaterial', 'OctaneShadowCatcherMaterial', 'OctaneShadowCatcherMaterial'),
+    ('OctaneSpecularMaterial', 'OctaneSpecularMaterial', 'OctaneSpecularMaterial'),
+    ('OctaneToonMaterial', 'OctaneToonMaterial', 'OctaneToonMaterial'),
+    ('ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex', 'ToonRampTex'),
+    ('OctaneUniversalMaterial', 'OctaneUniversalMaterial', 'OctaneUniversalMaterial'),
 
 )
 octane_layers_node_layout = (
-    ('ShaderNodeOctGroupLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
-    ('ShaderNodeOctDiffuseLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
-    ('ShaderNodeOctMetallicLayer', 'ShaderNodeOctMetallicLayer', 'MetallicLayer'),
-    ('ShaderNodeOctSheenLayer', 'ShaderNodeOctSheenLayer', 'SheenLayer'),
-    ('ShaderNodeOctSpecularLayer', 'ShaderNodeOctSpecularLayer', 'SpecularLayer'),
+    ('OctaneDiffuseLayer', 'OctaneDiffuseLayer', 'OctaneDiffuseLayer'),
+    ('OctaneMaterialLayerGroup', 'OctaneMaterialLayerGroup', 'OctaneMaterialLayerGroup'),
+    ('OctaneMetallicLayer', 'OctaneMetallicLayer', 'OctaneMetallicLayer'),
+    ('OctaneSheenLayer', 'OctaneSheenLayer', 'OctaneSheenLayer'),
+    ('OctaneSpecularLayer', 'OctaneSpecularLayer', 'OctaneSpecularLayer'),
 
 )
 octane_textures_node_layout = (
-    ('ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex', 'GaussSpectrumTex'),
-    ('ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex', 'RGBSpectrumTex'),
-    ('ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex', 'AlphaImageTex'),
-    ('ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex', 'FloatImageTex'),
-    ('ShaderNodeOctImageTex', 'ShaderNodeOctImageTex', 'ImageTex'),
-    ('ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex', 'ImageTileTex'),
-    ('ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex', 'InstanceColorTex'),
+    ('OctaneGaussianSpectrum', 'OctaneGaussianSpectrum', 'OctaneGaussianSpectrum'),
+    ('OctaneGreyscaleColor', 'OctaneGreyscaleColor', 'OctaneGreyscaleColor'),
+    ('OctaneOSLTexture', 'OctaneOSLTexture', 'OctaneOSLTexture'),
+    ('OctaneRGBColor', 'OctaneRGBColor', 'OctaneRGBColor'),
     
 )
 octane_textureprocedural_node_layout = (
@@ -187,9 +187,9 @@ octane_texturetools_node_layout = (
     ('ShaderNodeOctSubtractTex', 'ShaderNodeOctSubtractTex', 'SubtractTex'),
     ('ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex', 'ToonRampTex'),
     ('ShaderNodeOctVolumeRampTex', 'ShaderNodeOctVolumeRampTex', 'VolumeRampTex'),
-    ('ShaderNodeOctDisplacementTex', 'ShaderNodeOctDisplacementTex', 'DisplacementTex'),
-    ('ShaderNodeOctVertexDisplacementTex', 'ShaderNodeOctVertexDisplacementTex', 'VertexDisplacementTex'),
-    ('ShaderNodeOctVertexDisplacementMixerTex', 'ShaderNodeOctVertexDisplacementMixerTex', 'VertexDisplacementMixerTex'),
+    ('OctaneTextureDisplacement', 'OctaneTextureDisplacement', 'OctaneTextureDisplacement'),
+    ('OctaneVertexDisplacement', 'OctaneVertexDisplacement', 'OctaneVertexDisplacement'),
+    ('OctaneVertexDisplacementMixer', 'OctaneVertexDisplacementMixer', 'OctaneVertexDisplacementMixer'),
 
 )
 octane_emission_node_layout = (
@@ -1312,10 +1312,10 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
     texture_setup_displacement: EnumProperty(
         name="Shader's texture setup displacement",
         items=(
-            ("ShaderNodeOctDisplacementTex", "Texture Displacement node", "Setup node will use Texture Displacement node"),
-            ("ShaderNodeOctVertexDisplacementTex", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
+            ("OctaneTextureDisplacement", "Texture Displacement node", "Setup node will use Texture Displacement node"),
+            ("OctaneVertexDisplacement", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
         ),
-        default='ShaderNodeOctDisplacementTex',
+        default='OctaneTextureDisplacement',
         description="When setup textures for shader, for displacement it'll use this node")
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
@@ -2179,7 +2179,7 @@ class NWPreviewNode(Operator, NWBase):
                                 emission.label = "Octane Viewer"
                                 emission.inputs[0].default_value = (0, 0, 0, 1)  
                                 
-                                ExposureComp = base_node_tree.nodes.new("ShaderNodeOctTextureEmission")	
+                                ExposureComp = base_node_tree.nodes.new("OctaneTextureEmission")	
                                 ExposureComp.label = "Octane Viewer"	
                                 ExposureComp.hide = True	
                                 ExposureComp.inputs[1].default_value = (1/context.scene.oct_view_cam.exposure)	
@@ -3527,13 +3527,13 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         # ShaderNodeOctGlossyMat
         # ShaderNodeOctHairMat
 
-        if not (active_node and active_node.bl_idname in ['ShaderNodeOctUniversalMat', 
-                                                          'ShaderNodeOctMetalMat',
-                                                          'ShaderNodeOctToonMat',
-                                                          'ShaderNodeOctSpecularMat',
-                                                          'ShaderNodeOctDiffuseMat',
-                                                          'ShaderNodeOctGlossyMat',
-                                                          'ShaderNodeOctHairMat']):
+        if not (active_node and active_node.bl_idname in ['OctaneUniversalMaterial', 
+                                                          'OctaneMetallicMaterial',
+                                                          'OctaneToonMaterial',
+                                                          'OctaneSpecularMaterial',
+                                                          'OctaneDiffuseMaterial',
+                                                          'OctaneGlossyMaterial',
+                                                          'OctaneHairMaterial']):
             self.report({'INFO'}, 'Select Shader Node')
             return {'CANCELLED'}
 
@@ -3566,11 +3566,13 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         socketnames = [
         ['Displacement', tags.displacement.split(' '), None],
         ['Albedo color', tags.base_color.split(' '), None],
+        ['Diffuse color', tags.base_color.split(' '), None],
         ['Albedo', tags.base_color.split(' '), None],
         ['Diffuse', tags.base_color.split(' '), None],
         ['Medium', tags.sss_color.split(' '), None],
         ['Metallic', tags.metallic.split(' '), None],
         ['Specular', tags.specular.split(' '), None],
+        ['Specular map', tags.specular.split(' '), None],
         ['Roughness', rough_abbr + gloss_abbr, None],
         ['Bump', bump_abbr, None],
         ['Normal', normal_abbr, None],
@@ -3631,6 +3633,8 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 settings = context.preferences.addons[__name__].preferences
                 disp_node = nodes.new(type=settings.texture_setup_displacement)
                 disp_node.location = active_node.location + Vector((-200, -1110))
+                disp_node.inputs[1].default_value = 0.5  
+                disp_node.inputs[3].default_value = 0.1
                 link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
 
                 # TODO Turn on true displacement in the material
@@ -3641,7 +3645,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 if output_node:
                     if not output_node[0].inputs[2].is_linked:
                         link = links.new(active_node.inputs[sname[0]], disp_node.outputs[0])
-
+            
                 continue
 
             if not active_node.inputs[sname[0]].is_linked:
@@ -3682,10 +3686,10 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                     # This is a simple connection Texture --> Input slot
                     link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
 
+
                 # Use non-color for all but 'Albedo color' Textures
                 #if not sname[0] in ['Albedo color'] and texture_node.image:
                     #texture_node.image.colorspace_settings.is_data = True
-
             else:
                 # If already texture connected. add to node list for alignment
                 texture_node = active_node.inputs[sname[0]].links[0].from_node
@@ -3712,7 +3716,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
             invert_node.location = roughness_node.location + Vector((300, 0))
 
         # Add texture input + mapping
-        mapping = nodes.new(type='ShaderNodeOctFullTransform')
+        mapping = nodes.new(type='OctaneTransformValue')
         mapping.location = active_node.location + Vector((-1150, 0))
         if len(texture_nodes) > 1:
             # If more than one texture add reroute node in between
@@ -3720,7 +3724,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
             tex_coords = Vector((texture_nodes[0].location.x, sum(n.location.y for n in texture_nodes)/len(texture_nodes)))
             reroute.location = tex_coords + Vector((-50, -120))
             for texture_node in texture_nodes:
-                link = links.new(texture_node.inputs[4], reroute.outputs[0])
+                link = links.new(texture_node.inputs[5], reroute.outputs[0])
             link = links.new(reroute.inputs[0], mapping.outputs[0])
 
             texture_nodes.append(reroute)
