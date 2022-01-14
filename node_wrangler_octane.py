@@ -3652,7 +3652,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 # No texture node connected -> add texture node with new image
                 texture_node = None
 
-                if sname[0] in ['Metallic', 'Roughness', 'Specular']:
+                if sname[0] in ['Metallic', 'Roughness', 'Specular', 'Bump']:
                     texture_node = nodes.new(type='ShaderNodeOctFloatImageTex')
                 else:
                     texture_node = nodes.new(type='ShaderNodeOctImageTex')
