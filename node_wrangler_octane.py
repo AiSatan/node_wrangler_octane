@@ -17,14 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "Node Wrangler",
-    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer",
-    "version": (3, 38),
+    "name": "Node Wrangler (Custom build for Octane)",
+    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
+    "version": (1, 0),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
-    "description": "Various tools to enhance and speed up node-based workflow",
+    "description": "Various tools to enhance and speed up node-based workflow with Octane",
     "warning": "",
-    "doc_url": "{BLENDER_MANUAL_URL}/addons/node/node_wrangler.html",
+    "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
     "category": "Node",
 }
 
@@ -114,6 +114,140 @@ shaders_input_nodes_props = (
     ('ShaderNodeWireframe', 'WIREFRAME', 'Wireframe'),
 
 )
+
+
+octane_shader_node_layout = (
+    ('ShaderNodeOctDiffuseMat', 'ShaderNodeOctDiffuseMat', 'DiffuseMat'),
+    ('ShaderNodeOctGlossyMat', 'ShaderNodeOctGlossyMat', 'GlossyMat'),
+    ('ShaderNodeOctSpecularMat', 'ShaderNodeOctSpecularMat', 'SpecularMat'),
+    ('ShaderNodeOctMixMat', 'ShaderNodeOctMixMat', 'MixMat'),
+    ('ShaderNodeOctPortalMat', 'ShaderNodeOctPortalMat', 'PortalMat'),
+    ('ShaderNodeOctShadowCatcherMat', 'ShaderNodeOctShadowCatcherMat', 'ShadowCatcherMat'),
+    ('ShaderNodeOctToonMat', 'ShaderNodeOctToonMat', 'ToonMat'),
+    ('ShaderNodeOctMetalMat', 'ShaderNodeOctMetalMat', 'MetalMat'),
+    ('ShaderNodeOctUniversalMat', 'ShaderNodeOctUniversalMat', 'UniversalMat'),
+    ('ShaderNodeOctLayeredMat', 'ShaderNodeOctLayeredMat', 'LayeredMat'),
+    ('ShaderNodeOctCompositeMat', 'ShaderNodeOctCompositeMat', 'CompositeMat'),
+    ('ShaderNodeOctHairMat', 'ShaderNodeOctHairMat', 'HairMat'),
+
+)
+octane_layers_node_layout = (
+    ('ShaderNodeOctGroupLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
+    ('ShaderNodeOctDiffuseLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
+    ('ShaderNodeOctMetallicLayer', 'ShaderNodeOctMetallicLayer', 'MetallicLayer'),
+    ('ShaderNodeOctSheenLayer', 'ShaderNodeOctSheenLayer', 'SheenLayer'),
+    ('ShaderNodeOctSpecularLayer', 'ShaderNodeOctSpecularLayer', 'SpecularLayer'),
+
+)
+octane_textures_node_layout = (
+    ('ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex', 'GaussSpectrumTex'),
+    ('ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex', 'RGBSpectrumTex'),
+    ('ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex', 'AlphaImageTex'),
+    ('ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex', 'FloatImageTex'),
+    ('ShaderNodeOctImageTex', 'ShaderNodeOctImageTex', 'ImageTex'),
+    ('ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex', 'ImageTileTex'),
+    ('ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex', 'InstanceColorTex'),
+    
+)
+octane_textureprocedural_node_layout = (
+    ('ShaderNodeOctChecksTex', 'ShaderNodeOctChecksTex', 'ChecksTex'),
+    ('ShaderNodeOctDirtTex', 'ShaderNodeOctDirtTex', 'DirtTex'),
+    ('ShaderNodeOctFloatTex', 'ShaderNodeOctFloatTex', 'FloatTex'),
+    ('ShaderNodeOctMarbleTex', 'ShaderNodeOctMarbleTex', 'MarbleTex'),
+    ('ShaderNodeOctNoiseTex', 'ShaderNodeOctNoiseTex', 'NoiseTex'),
+    ('ShaderNodeOctOSLTex', 'ShaderNodeOctOSLTex', 'OSLTex'),
+    ('ShaderNodeOctPolygonSideTex', 'ShaderNodeOctPolygonSideTex', 'PolygonSideTex'),
+    ('ShaderNodeOctRandomColorTex', 'ShaderNodeOctRandomColorTex', 'RandomColorTex'),
+    ('ShaderNodeOctRidgedFractalTex', 'ShaderNodeOctRidgedFractalTex', 'RidgedFractalTex'),
+    ('ShaderNodeOctTriplanarTex', 'ShaderNodeOctTriplanarTex', 'TriplanarTex'),
+    ('ShaderNodeOctSawWaveTex', 'ShaderNodeOctSawWaveTex', 'SawWaveTex'),
+    ('ShaderNodeOctSineWaveTex', 'ShaderNodeOctSineWaveTex', 'SineWaveTex'),
+    ('ShaderNodeOctTriWaveTex', 'ShaderNodeOctTriWaveTex', 'TriWaveTex'),
+    ('ShaderNodeOctTurbulenceTex', 'ShaderNodeOctTurbulenceTex', 'TurbulenceTex'),
+    ('ShaderNodeOctUVWTransformTex', 'ShaderNodeOctUVWTransformTex', 'UVWTransformTex'),
+    ('ShaderNodeOctWTex', 'ShaderNodeOctWTex', 'WTex'),
+    ('ShaderNodeOctFloatVertexTex', 'ShaderNodeOctFloatVertexTex', 'FloatVertexTex'),
+    ('ShaderNodeOctColorVertexTex', 'ShaderNodeOctColorVertexTex', 'ColorVertexTex'),
+
+)
+
+octane_texturetools_node_layout = (
+    ('ShaderNodeOctAddTex', 'ShaderNodeOctAddTex', 'AddTex'),
+    ('ShaderNodeOctBakingTex', 'ShaderNodeOctBakingTex', 'BakingTex'),
+    ('ShaderNodeOctClampTex', 'ShaderNodeOctClampTex', 'ClampTex'),
+    ('ShaderNodeOctColorCorrectTex', 'ShaderNodeOctColorCorrectTex', 'ColorCorrectTex'),
+    ('ShaderNodeOctCompareTex', 'ShaderNodeOctCompareTex', 'CompareTex'),
+    ('ShaderNodeOctCosineMixTex', 'ShaderNodeOctCosineMixTex', 'CosineMixTex'),
+    ('ShaderNodeOctFalloffTex', 'ShaderNodeOctFalloffTex', 'FalloffTex'),
+    ('ShaderNodeOctGradientTex', 'ShaderNodeOctGradientTex', 'GradientTex'),
+    ('ShaderNodeOctInstanceRangeTex', 'ShaderNodeOctInstanceRangeTex', 'InstanceRangeTex'),
+    ('ShaderNodeOctInvertTex', 'ShaderNodeOctInvertTex', 'InvertTex'),
+    ('ShaderNodeOctMixTex', 'ShaderNodeOctMixTex', 'MixTex'),
+    ('ShaderNodeOctMultiplyTex', 'ShaderNodeOctMultiplyTex', 'MultiplyTex'),
+    ('ShaderNodeOctSubtractTex', 'ShaderNodeOctSubtractTex', 'SubtractTex'),
+    ('ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex', 'ToonRampTex'),
+    ('ShaderNodeOctVolumeRampTex', 'ShaderNodeOctVolumeRampTex', 'VolumeRampTex'),
+    ('ShaderNodeOctDisplacementTex', 'ShaderNodeOctDisplacementTex', 'DisplacementTex'),
+    ('ShaderNodeOctVertexDisplacementTex', 'ShaderNodeOctVertexDisplacementTex', 'VertexDisplacementTex'),
+    ('ShaderNodeOctVertexDisplacementMixerTex', 'ShaderNodeOctVertexDisplacementMixerTex', 'VertexDisplacementMixerTex'),
+
+)
+octane_emission_node_layout = (
+    ('ShaderNodeOctBlackBodyEmission', 'ShaderNodeOctBlackBodyEmission', 'BlackBodyEmission'),
+    ('ShaderNodeOctTextureEmission', 'ShaderNodeOctTextureEmission', 'TextureEmission'),
+    ('ShaderNodeOctToonDirectionLight', 'ShaderNodeOctToonDirectionLight', 'ToonDirectionLight'),
+    ('ShaderNodeOctToonPointLight', 'ShaderNodeOctToonPointLight', 'ToonPointLight'),
+
+)
+octane_mediums_node_layout = (
+    ('ShaderNodeOctAbsorptionMedium', 'ShaderNodeOctAbsorptionMedium', 'AbsorptionMedium'),
+    ('ShaderNodeOctScatteringMedium', 'ShaderNodeOctScatteringMedium', 'ScatteringMedium'),
+    ('ShaderNodeOctVolumeMedium', 'ShaderNodeOctVolumeMedium', 'VolumeMedium'),
+    ('ShaderNodeOctRandomWalkMedium', 'ShaderNodeOctRandomWalkMedium', 'RandomWalkMedium'),
+
+)
+octane_transfroms_node_layout = (
+    ('ShaderNodeOctScaleTransform', 'ShaderNodeOctScaleTransform', 'ScaleTransform'),
+    ('ShaderNodeOctRotateTransform', 'ShaderNodeOctRotateTransform', 'RotateTransform'),
+    ('ShaderNodeOctFullTransform', 'ShaderNodeOctFullTransform', 'FullTransform'),
+    ('ShaderNodeOct2DTransform', 'ShaderNodeOct2DTransform', '2DTransform'),
+    ('ShaderNodeOct3DTransform', 'ShaderNodeOct3DTransform', '3DTransform'),
+
+)
+octane_projections_node_layout = (
+    ('ShaderNodeOctBoxProjection', 'ShaderNodeOctBoxProjection', 'BoxProjection'),
+    ('ShaderNodeOctCylProjection', 'ShaderNodeOctCylProjection', 'CylProjection'),
+    ('ShaderNodeOctPerspProjection', 'ShaderNodeOctPerspProjection', 'PerspProjection'),
+    ('ShaderNodeOctSphericalProjection', 'ShaderNodeOctSphericalProjection', 'SphericalProjection'),
+    ('ShaderNodeOctUVWProjection', 'ShaderNodeOctUVWProjection', 'UVWProjection'),
+    ('ShaderNodeOctXYZProjection', 'ShaderNodeOctXYZProjection', 'XYZProjection'),
+    ('ShaderNodeOctTriplanarProjection', 'ShaderNodeOctTriplanarProjection', 'TriplanarProjection'),
+    ('ShaderNodeOctOSLUVProjection', 'ShaderNodeOctOSLUVProjection', 'OSLUVProjection'),
+    ('ShaderNodeOctOSLProjection', 'ShaderNodeOctOSLProjection', 'OSLProjection'),
+
+)
+octane_values_node_layout = (
+    ('ShaderNodeOctFloatValue', 'ShaderNodeOctFloatValue', 'FloatValue'),
+    ('ShaderNodeOctIntValue', 'ShaderNodeOctIntValue', 'IntValue'),
+    ('ShaderNodeOctSunDirectionValue', 'ShaderNodeOctSunDirectionValue', 'SunDirectionValue'),
+    ('ShaderNodeOctTextureReferenceValue', 'ShaderNodeOctTextureReferenceValue', 'TextureReferenceValue'),
+)
+octane_cameras_node_layout = (
+    ('ShaderNodeOctOSLCamera', 'ShaderNodeOctOSLCamera', 'OSLCamera'),
+    ('ShaderNodeOctOSLBakingCamera', 'ShaderNodeOctOSLBakingCamera', 'OSLBakingCamera'),
+)
+octane_vectrons_node_layout = (
+    ('ShaderNodeOctVectron', 'ShaderNodeOctVectron', 'Vectron'),
+)
+octane_roundedges_node_layout = (
+    ('ShaderNodeOctRoundEdges', 'ShaderNodeOctRoundEdges', 'RoundEdges'),
+)
+octane_enviroment_node_layout = (
+    ('ShaderNodeOctTextureEnvironment', 'ShaderNodeOctTextureEnvironment', 'TextureEnvironment'),
+    ('ShaderNodeOctDaylightEnvironment', 'ShaderNodeOctDaylightEnvironment', 'DaylightEnvironment'),
+    ('ShaderNodeOctPlanetaryEnvironment', 'ShaderNodeOctPlanetaryEnvironment', 'PlanetaryEnvironment'),
+)
+
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
 # Keeping things in alphabetical order so we don't need to sort later.
@@ -1175,7 +1309,14 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         ),
         default='CENTER',
         description="When merging nodes with the Ctrl+Numpad0 hotkey (and similar) specify the position of the new nodes")
-
+    texture_setup_displacement: EnumProperty(
+        name="Shader's texture setup displacement",
+        items=(
+            ("ShaderNodeOctDisplacementTex", "Texture Displacement node", "Setup node will use Texture Displacement node"),
+            ("ShaderNodeOctVertexDisplacementTex", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
+        ),
+        default='ShaderNodeOctDisplacementTex',
+        description="When setup textures for shader, for displacement it'll use this node")
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
         default=False,
@@ -1198,6 +1339,7 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         col = layout.column()
         col.prop(self, "merge_position")
         col.prop(self, "merge_hide")
+        col.prop(self, "texture_setup_displacement")
 
         box = layout.box()
         col = box.column(align=True)
