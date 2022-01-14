@@ -2152,7 +2152,6 @@ class NWPreviewNode(Operator, NWBase):
                 make_links = []  # store sockets for new links
                 delete_nodes = [] # store unused nodes to delete in the end
                 if active.outputs:
-                    print(active.outputs[out_i].type)
                     # If output type not 'SHADER' - "Emission Viewer" needed
                     if active.outputs[out_i].type != 'SHADER' and active.outputs[out_i].type != 'VALUE':
                         socket_type = 'NodeSocketColor'
