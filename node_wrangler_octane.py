@@ -2158,22 +2158,55 @@ class NWPreviewNode(Operator, NWBase):
                         # get Emission Viewer node
                         emission_exists = False
                         emission_placeholder = base_node_tree.nodes[0]
-                        for node in base_node_tree.nodes:
-                            if "Emission Viewer" in node.name:
-                                emission_exists = True
-                                emission_placeholder = node
+
+                        if context.scene.render.engine != 'octane':	
+                            for node in base_node_tree.nodes:
+                                if "Emission Viewer" in node.name:
+                                    emission_exists = True
+                                    emission_placeholder = node
+                        else:
+                            for node in base_node_tree.nodes:
+                                if "Emission Viewer" in node.name:
+                                    base_node_tree.nodes.remove(node)
+                                    continue
+                                if "Oct Emission Viewer" in node.name:
+                                    base_node_tree.nodes.remove(node)
+                                    continue
+
                         if not emission_exists:
-                            emission = base_node_tree.nodes.new(self.shader_viewer_ident)
+                            if context.scene.render.engine == 'octane':
+                                emission = base_node_tree.nodes.new("ShaderNodeOctDiffuseMat")
+                                emission.label = "Octane Viewer"
+                                emission.inputs[0].default_value = (0, 0, 0, 1)  
+                                
+                                ExposureComp = base_node_tree.nodes.new("ShaderNodeOctTextureEmission")	
+                                ExposureComp.label = "Octane Viewer"	
+                                ExposureComp.hide = True	
+                                ExposureComp.inputs[1].default_value = (1/context.scene.oct_view_cam.exposure)	
+                                ExposureComp.inputs[2].default_value = True	
+                                ExposureComp.inputs[8].default_value = False	
+                                ExposureComp.inputs[9].default_value = False	
+                                ExposureComp.location = [materialout.location.x, (materialout.location.y + 45)]	
+                                ExposureComp.name = "Oct Emission Viewer"	
+                                make_links.append((ExposureComp.outputs[0],emission.inputs[12]))	
+                                make_links.append((ExposureComp.inputs[0],active.outputs[0]))
+                            else:
+                                emission = base_node_tree.nodes.new(self.shader_viewer_ident)
+                                emission.label = "Cycle/Eevee Viewer"
+
                             emission.hide = True
                             emission.location = [materialout.location.x, (materialout.location.y + 40)]
-                            emission.label = "Viewer"
                             emission.name = "Emission Viewer"
                             emission.use_custom_color = True
                             emission.color = (0.6, 0.5, 0.4)
                             emission.select = False
                         else:
                             emission = emission_placeholder
-                        output_socket = emission.inputs[0]
+
+                        if context.scene.render.engine != 'octane':	
+                            output_socket = emission.inputs[0]
+                        else:
+                            output_socket = ExposureComp.inputs[0]
 
                         # If Viewer is connected to output by user, don't change those connections (patch by gandalf3)
                         if emission.outputs[0].links.__len__() > 0:
@@ -2190,7 +2223,6 @@ class NWPreviewNode(Operator, NWBase):
 
                         intensity /= pow(2, (context.scene.view_settings.exposure))  # CM exposure is measured in stops/EVs (2^x)
                         emission.inputs[1].default_value = intensity
-
                     else:
                         # Output type is 'SHADER', no Viewer needed. Delete Viewer if exists.
                         socket_type = 'NodeSocketShader'
@@ -2200,12 +2232,15 @@ class NWPreviewNode(Operator, NWBase):
                         for node in base_node_tree.nodes:
                             if node.name == 'Emission Viewer':
                                 delete_nodes.append((base_node_tree, node))
+                            if  node.name == "Oct Emission Viewer":
+                                delete_nodes.append((base_node_tree, node))
                     for li_from, li_to in make_links:
                         base_node_tree.links.new(li_from, li_to)
 
                     # Crate links through node groups until we reach the active node
                     tree = base_node_tree
                     link_end = output_socket
+
                     while tree.nodes.active != active:
                         node = tree.nodes.active
                         index = self.ensure_viewer_socket(node, socket_type, connect_socket=active.outputs[out_i] if node.node_tree.nodes.active == active else None)
