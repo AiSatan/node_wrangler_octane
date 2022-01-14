@@ -3357,18 +3357,18 @@ class NWAddTextureSetup(Operator, NWBase):
 
                 t_node.select = False
                 if self.add_mapping or is_texture:
-                    if t_node.bl_idname != 'ShaderNodeOctUVWProjection':
-                        m = nodes.new('ShaderNodeOctFullTransform')
+                    if t_node.bl_idname != 'OctaneMeshUVProjection':
+                        m = nodes.new('OctaneTransformValue')
                         m.location = [locx - xoffset[0], locy + 141]
                         m.width = 240
                     else:
                         m = t_node
-                    coord = nodes.new('ShaderNodeOctUVWProjection')
+                    coord = nodes.new('OctaneMeshUVProjection')
                     coord.location = [locx - (200 if t_node.type == 'MAPPING' else xoffset[1]), locy + 124]
 
                     if not is_texture:
-                        links.new(m.outputs[0], tex.inputs[4])
-                        links.new(coord.outputs[0], tex.inputs[5])
+                        links.new(m.outputs[0], tex.inputs[5])
+                        links.new(coord.outputs[0], tex.inputs[6])
                     else:
                         nodes.active = m
                         if is_proc:
@@ -3388,8 +3388,8 @@ class NWAddTextureSetup(Operator, NWBase):
                                 # only node is selected now
                                 bpy.ops.node.delete()
                         else:
-                            links.new(m.outputs[0], t_node.inputs[4])
-                            links.new(coord.outputs[0], t_node.inputs[5])
+                            links.new(m.outputs[0], t_node.inputs[5])
+                            links.new(coord.outputs[0], t_node.inputs[6])
             else:
                 self.report({'WARNING'}, "No free inputs for node: "+t_node.name)
         return {'FINISHED'}
