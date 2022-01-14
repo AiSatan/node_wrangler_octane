@@ -3074,7 +3074,7 @@ class NWChangeMixFactor(Operator, NWBase):
         selected = []  # entry = index
         for si, node in enumerate(nodes):
             if node.select:
-                if node.type in {'MIX_RGB', 'MIX_SHADER'}:
+                if node.type in {'MIX_RGB', 'MIX_SHADER', 'OCT_MIX_TEX', 'OCT_MIX_MAT', 'OCT_COSMIX_TEX'}:
                     selected.append(si)
 
         for si in selected:
@@ -3315,7 +3315,89 @@ class NWAddTextureSetup(Operator, NWBase):
                 valid = True
         return valid
 
+    def execute_octane(self, context):
+        nodes, links = get_nodes_links(context)
+        shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
+        texture_types = [x[1] for x in octane_textures_node_layout]
+        procedural_types = [x[1] for x in octane_textureprocedural_node_layout]
+        selected_nodes = [n for n in nodes if n.select]
+        for t_node in selected_nodes:
+            valid = False
+            input_index = 0
+            if t_node.inputs:
+                for index, i in enumerate(t_node.inputs):
+                    if not i.is_linked:
+                        valid = True
+                        input_index = index
+                        break
+            if valid:
+                locx = t_node.location.x
+                locy = t_node.location.y - t_node.dimensions.y/2
+                xoffset = [500, 700]
+                is_texture = False
+                is_proc = False
+                if t_node.bl_idname in texture_types + procedural_types:
+                    xoffset = [290, 500]
+                    is_texture = True
+                    if t_node.bl_idname in procedural_types:
+                        is_proc = True
+                coordout = 2
+                image_type = 'ShaderNodeOctImageTex'
+
+                if (t_node.type in texture_types and t_node.type != 'TEX_IMAGE') or (t_node.type == 'BACKGROUND'):
+                    coordout = 0  # image texture uses UVs, procedural textures and Background shader use Generated
+                    if t_node.type == 'BACKGROUND':
+                        image_type = 'ShaderNodeTexEnvironment'
+
+                if not is_texture:
+                    tex = nodes.new(image_type)
+                    tex.location = [locx - 200, locy + 112]
+                    nodes.active = tex
+                    links.new(tex.outputs[0], t_node.inputs[1])
+
+                t_node.select = False
+                if self.add_mapping or is_texture:
+                    if t_node.bl_idname != 'ShaderNodeOctUVWProjection':
+                        m = nodes.new('ShaderNodeOctFullTransform')
+                        m.location = [locx - xoffset[0], locy + 141]
+                        m.width = 240
+                    else:
+                        m = t_node
+                    coord = nodes.new('ShaderNodeOctUVWProjection')
+                    coord.location = [locx - (200 if t_node.type == 'MAPPING' else xoffset[1]), locy + 124]
+
+                    if not is_texture:
+                        links.new(m.outputs[0], tex.inputs[4])
+                        links.new(coord.outputs[0], tex.inputs[5])
+                    else:
+                        nodes.active = m
+                        if is_proc:
+                            if 'Transform' in t_node.inputs:
+                                links.new(m.outputs[0], t_node.inputs['Transform'])
+                            else:
+                                # delete node
+                                t_node.select = False
+                                # only node is selected now
+                                bpy.ops.node.delete()
+
+                            if 'Projection' in t_node.inputs:
+                                links.new(coord.outputs[0], t_node.inputs['Projection'])
+                            else:
+                                # delete node
+                                t_node.select = False
+                                # only node is selected now
+                                bpy.ops.node.delete()
+                        else:
+                            links.new(m.outputs[0], t_node.inputs[4])
+                            links.new(coord.outputs[0], t_node.inputs[5])
+            else:
+                self.report({'WARNING'}, "No free inputs for node: "+t_node.name)
+        return {'FINISHED'}
+
     def execute(self, context):
+        if context.scene.render.engine == 'octane':
+            return self.execute_octane(context)
+
         nodes, links = get_nodes_links(context)
         shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
         texture_types = [x[1] for x in shaders_texture_nodes_props]
@@ -3419,7 +3501,253 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 valid = True
         return valid
 
+
+    ###
+    ### For octane's shaders
+    ###
+
+    def execute_octane(self, context):
+        # Check if everything is ok
+        if not self.directory:
+            self.report({'INFO'}, 'No Folder Selected')
+            return {'CANCELLED'}
+        if not self.files[:]:
+            self.report({'INFO'}, 'No Files Selected')
+            return {'CANCELLED'}
+
+        nodes, links = get_nodes_links(context)
+        active_node = nodes.active
+
+        # Octane shader's names
+        # ShaderNodeOctUniversalMat
+        # ShaderNodeOctMetalMat
+        # ShaderNodeOctToonMat
+        # ShaderNodeOctSpecularMat
+        # ShaderNodeOctDiffuseMat
+        # ShaderNodeOctGlossyMat
+        # ShaderNodeOctHairMat
+
+        if not (active_node and active_node.bl_idname in ['ShaderNodeOctUniversalMat', 
+                                                          'ShaderNodeOctMetalMat',
+                                                          'ShaderNodeOctToonMat',
+                                                          'ShaderNodeOctSpecularMat',
+                                                          'ShaderNodeOctDiffuseMat',
+                                                          'ShaderNodeOctGlossyMat',
+                                                          'ShaderNodeOctHairMat']):
+            self.report({'INFO'}, 'Select Shader Node')
+            return {'CANCELLED'}
+
+        # Helper_functions
+        def split_into__components(fname):
+            # Split filename into components
+            # 'WallTexture_diff_2k.002.jpg' -> ['Wall', 'Texture', 'diff', 'k']
+            # Remove extension
+            fname = path.splitext(fname)[0]
+            # Remove digits
+            fname = ''.join(i for i in fname if not i.isdigit())
+            # Separate CamelCase by space
+            fname = re.sub("([a-z])([A-Z])","\g<1> \g<2>",fname)
+            # Replace common separators with SPACE
+            seperators = ['_', '.', '-', '__', '--', '#']
+            for sep in seperators:
+                fname = fname.replace(sep, ' ')
+
+            components = fname.split(' ')
+            components = [c.lower() for c in components]
+            return components
+
+        # Filter textures names for texturetypes in filenames
+        # [Socket Name, [abbreviations and keyword list], Filename placeholder]
+        tags = context.preferences.addons[__name__].preferences.principled_tags
+        normal_abbr = tags.normal.split(' ')
+        bump_abbr = tags.bump.split(' ')
+        gloss_abbr = tags.gloss.split(' ')
+        rough_abbr = tags.rough.split(' ')
+        socketnames = [
+        ['Displacement', tags.displacement.split(' '), None],
+        ['Albedo color', tags.base_color.split(' '), None],
+        ['Albedo', tags.base_color.split(' '), None],
+        ['Diffuse', tags.base_color.split(' '), None],
+        ['Medium', tags.sss_color.split(' '), None],
+        ['Metallic', tags.metallic.split(' '), None],
+        ['Specular', tags.specular.split(' '), None],
+        ['Roughness', rough_abbr + gloss_abbr, None],
+        ['Bump', bump_abbr, None],
+        ['Normal', normal_abbr, None],
+        ]
+
+        # Look through texture_types and set value as filename of first matched file
+        def match_files_to_socket_names():
+            for sname in socketnames:
+                for file in self.files:
+                    fname = file.name
+                    filenamecomponents = split_into__components(fname)
+                    matches = set(sname[1]).intersection(set(filenamecomponents))
+                    # TODO: ignore basename (if texture is named "fancy_metal_nor", it will be detected as metallic map, not normal map)
+                    if matches:
+                        sname[2] = fname
+                        break
+
+        match_files_to_socket_names()
+        # Remove socketnames without found files
+        socketnames = [s for s in socketnames if s[2]
+                       and path.exists(self.directory+s[2])]
+        if not socketnames:
+            self.report({'INFO'}, 'No matching images found')
+            print('No matching images found')
+            return {'CANCELLED'}
+
+        # Don't override path earlier as os.path is used to check the absolute path
+        import_path = self.directory
+        if self.relative_path:
+            if bpy.data.filepath:
+                try:
+                    import_path = bpy.path.relpath(self.directory)
+                except ValueError:
+                    pass
+
+        # Add found images
+        print('\nMatched Textures:')
+        texture_nodes = []
+        texture_node = None
+        disp_texture = None
+        normal_node = None
+        roughness_node = None
+        for i, sname in enumerate(socketnames):
+            print(i, sname[0], sname[2])
+            if not sname[0] in active_node.inputs:
+                continue
+
+            # DISPLACEMENT NODES
+            if sname[0] == 'Displacement':
+                disp_texture = nodes.new(type='ShaderNodeOctFloatImageTex')
+                img = bpy.data.images.load(path.join(import_path, sname[2]))
+                disp_texture.image = img
+                disp_texture.label = 'Displacement'
+                #if disp_texture.image:
+                #    disp_texture.image.colorspace_settings.is_data = True
+
+                # Add displacement offset nodes
+                settings = context.preferences.addons[__name__].preferences
+                disp_node = nodes.new(type=settings.texture_setup_displacement)
+                disp_node.location = active_node.location + Vector((-200, -1110))
+                link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
+
+                # TODO Turn on true displacement in the material
+                # Too complicated for now
+
+                # Find output node
+                output_node = [n for n in nodes if n.bl_idname == 'ShaderNodeOutputMaterial']
+                if output_node:
+                    if not output_node[0].inputs[2].is_linked:
+                        link = links.new(active_node.inputs[sname[0]], disp_node.outputs[0])
+
+                continue
+
+            if not active_node.inputs[sname[0]].is_linked:
+                # No texture node connected -> add texture node with new image
+                texture_node = None
+
+                if sname[0] in ['Metallic', 'Roughness', 'Specular']:
+                    texture_node = nodes.new(type='ShaderNodeOctFloatImageTex')
+                else:
+                    texture_node = nodes.new(type='ShaderNodeOctImageTex')
+                img = bpy.data.images.load(path.join(import_path, sname[2]))
+                texture_node.image = img
+
+                # NORMAL NODES
+                if sname[0] == 'Normal':
+                    link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+                    normal_node_texture = texture_node
+
+                elif sname[0] == 'Roughness':
+                    # Test if glossy or roughness map
+                    fname_components = split_into__components(sname[2])
+                    match_rough = set(rough_abbr).intersection(set(fname_components))
+                    match_gloss = set(gloss_abbr).intersection(set(fname_components))
+
+                    if match_rough:
+                        # If Roughness nothing to to
+                        link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+
+                    elif match_gloss:
+                        # If Gloss Map add invert node
+                        invert_node = nodes.new(type='ShaderNodeOctInvertTex')
+                        link = links.new(invert_node.inputs[0], texture_node.outputs[0])
+
+                        link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
+                        roughness_node = texture_node
+
+                else:
+                    # This is a simple connection Texture --> Input slot
+                    link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+
+                # Use non-color for all but 'Albedo color' Textures
+                #if not sname[0] in ['Albedo color'] and texture_node.image:
+                    #texture_node.image.colorspace_settings.is_data = True
+
+            else:
+                # If already texture connected. add to node list for alignment
+                texture_node = active_node.inputs[sname[0]].links[0].from_node
+
+            if texture_node is not None:
+                # This are all connected texture nodes
+                texture_nodes.append(texture_node)
+                texture_node.label = sname[0]
+
+        if disp_texture:
+            texture_nodes.append(disp_texture)
+
+        # Alignment
+        for i, texture_node in enumerate(texture_nodes):
+            offset = Vector((-580, (i * -320) + 250))
+            texture_node.location = active_node.location + offset
+
+        if normal_node:
+            # Extra alignment if normal node was added
+            normal_node.location = normal_node_texture.location + Vector((300, 0))
+
+        if roughness_node:
+            # Alignment of invert node if glossy map
+            invert_node.location = roughness_node.location + Vector((300, 0))
+
+        # Add texture input + mapping
+        mapping = nodes.new(type='ShaderNodeOctFullTransform')
+        mapping.location = active_node.location + Vector((-1150, 0))
+        if len(texture_nodes) > 1:
+            # If more than one texture add reroute node in between
+            reroute = nodes.new(type='NodeReroute')
+            tex_coords = Vector((texture_nodes[0].location.x, sum(n.location.y for n in texture_nodes)/len(texture_nodes)))
+            reroute.location = tex_coords + Vector((-50, -120))
+            for texture_node in texture_nodes:
+                link = links.new(texture_node.inputs[4], reroute.outputs[0])
+            link = links.new(reroute.inputs[0], mapping.outputs[0])
+
+            texture_nodes.append(reroute)
+        else:
+            link = links.new(texture_nodes[0].inputs[0], mapping.outputs[0])
+
+        # Connect texture_coordiantes to mapping node
+        #texture_input = nodes.new(type='ShaderNodeOctFullTransform')
+        #texture_input.location = mapping.location + Vector((-200, 0))
+        #link = links.new(mapping.inputs[0], texture_input.outputs[2])
+
+        # Just to be sure
+        active_node.select = False
+        nodes.update()
+        links.update()
+        force_update(context)
+        return {'FINISHED'}
+    
+    ###
+    ### For blender's clasic shaders
+    ###
+
     def execute(self, context):
+        # execute octane's code if renderer selected
+        if context.scene.render.engine == 'octane':
+            return self.execute_octane(context)
+
         # Check if everything is ok
         if not self.directory:
             self.report({'INFO'}, 'No Folder Selected')
@@ -4823,6 +5151,21 @@ class NWSwitchNodeTypeMenu(Menu, NWBase):
             layout.menu(NWSwitchShadersVectorSubmenu.bl_idname)
             layout.menu(NWSwitchShadersConverterSubmenu.bl_idname)
             layout.menu(NWSwitchShadersLayoutSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneShaderSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneLayersSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneProceduralSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneTextureSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneToolSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneEmissionSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneMediumSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneTransformSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneProjectionSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneValueSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneCameraSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneVectronSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneRoundEdgesSubmenu.bl_idname)
+            layout.menu(NWSwitchShadersOctaneEnviromentSubmenu.bl_idname)
+
         if tree.type == 'COMPOSITING':
             layout.menu(NWSwitchCompoInputSubmenu.bl_idname)
             layout.menu(NWSwitchCompoOutputSubmenu.bl_idname)
@@ -4865,6 +5208,146 @@ class NWSwitchShadersInputSubmenu(Menu, NWBase):
             props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
             props.to_type = ident
 
+
+class NWSwitchShadersOctaneShaderSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_shader_submenu"
+    bl_label = "Octane Shader"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_shader_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneLayersSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_layers_submenu"
+    bl_label = "Octane Layers"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_layers_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneProceduralSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_procedural_submenu"
+    bl_label = "Octane Procedural"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_textureprocedural_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneTextureSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_texture_submenu"
+    bl_label = "Octane Texture"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_textures_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneToolSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_tool_submenu"
+    bl_label = "Octane Tool"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_texturetools_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneEmissionSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_emission_submenu"
+    bl_label = "Octane Emission"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_emission_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneMediumSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_medium_submenu"
+    bl_label = "Octane Medium"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_mediums_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneTransformSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_transform_submenu"
+    bl_label = "Octane Transform"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_transfroms_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneProjectionSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_projection_submenu"
+    bl_label = "Octane Projection"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_projections_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneValueSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_value_submenu"
+    bl_label = "Octane Value"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_values_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneCameraSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_camera_submenu"
+    bl_label = "Octane Camera"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_cameras_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneVectronSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_vectron_submenu"
+    bl_label = "Octane Vectron"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_vectrons_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneRoundEdgesSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_roundedges_submenu"
+    bl_label = "Octane Round Edges"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_roundedges_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
+
+class NWSwitchShadersOctaneEnviromentSubmenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_switch_shaders_octane_enviroment_submenu"
+    bl_label = "Octane Enviroment"
+
+    def draw(self, context):
+        layout = self.layout
+        for ident, node_type, rna_name in octane_enviroment_node_layout:
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
+            props.to_type = ident
 
 class NWSwitchShadersOutputSubmenu(Menu, NWBase):
     bl_idname = "NODE_MT_nw_switch_shaders_output_submenu"
@@ -5516,6 +5999,20 @@ classes = (
     NWVertColMenu,
     NWSwitchNodeTypeMenu,
     NWSwitchShadersInputSubmenu,
+    NWSwitchShadersOctaneShaderSubmenu,
+    NWSwitchShadersOctaneLayersSubmenu,
+    NWSwitchShadersOctaneProceduralSubmenu,
+    NWSwitchShadersOctaneTextureSubmenu,
+    NWSwitchShadersOctaneToolSubmenu,
+    NWSwitchShadersOctaneEmissionSubmenu,
+    NWSwitchShadersOctaneMediumSubmenu,
+    NWSwitchShadersOctaneTransformSubmenu,
+    NWSwitchShadersOctaneProjectionSubmenu,
+    NWSwitchShadersOctaneValueSubmenu,
+    NWSwitchShadersOctaneCameraSubmenu,
+    NWSwitchShadersOctaneVectronSubmenu,
+    NWSwitchShadersOctaneRoundEdgesSubmenu,
+    NWSwitchShadersOctaneEnviromentSubmenu,
     NWSwitchShadersOutputSubmenu,
     NWSwitchShadersShaderSubmenu,
     NWSwitchShadersTextureSubmenu,
