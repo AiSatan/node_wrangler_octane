@@ -2393,7 +2393,22 @@ class NWSwitchNodeType(Operator, NWBase):
         list(texture_textures_nodes_props) +
         list(texture_converter_nodes_props) +
         list(texture_distort_nodes_props) +
-        list(texture_layout_nodes_props)
+        list(texture_layout_nodes_props) +
+        list(octane_shader_node_layout) +
+        list(octane_layers_node_layout) +
+        list(octane_textures_node_layout) +
+        list(octane_texturetools_node_layout) +        
+        list(octane_textureprocedural_node_layout) +
+        list(octane_emission_node_layout) +
+        list(octane_mediums_node_layout) +
+        list(octane_transfroms_node_layout) +
+        list(octane_projections_node_layout) +
+        list(octane_values_node_layout) +
+        list(octane_cameras_node_layout) +
+        list(octane_vectrons_node_layout) +
+        list(octane_roundedges_node_layout) +
+        list(octane_enviroment_node_layout)
+
     )
 
     geo_to_type: StringProperty(
@@ -2800,17 +2815,41 @@ class NWMergeNodes(Operator, NWBase):
             was_multi = False
             for i in range(the_range):
                 if nodes_list == selected_mix:
-                    add_type = node_type + 'MixRGB'
-                    add = nodes.new(add_type)
-                    add.blend_type = mode
-                    if mode != 'MIX':
-                        add.inputs[0].default_value = 1.0
+                    add = None
+                    if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                        if mode == 'ADD':
+                            add_type = node_type + 'OctAddTex'
+                            first = 0
+                            second = 1
+                        elif mode == 'MIX':
+                            add_type = node_type + 'OctMixTex'
+                            first = 1
+                            second = 2
+                        elif mode == 'SUBTRACT':
+                            add_type = node_type + 'OctSubtractTex'
+                            first = 0
+                            second = 1
+                        elif mode == 'MULTIPLY':
+                            add_type = node_type + 'OctMultiplyTex'
+                            first = 0
+                            second = 1
+                        elif mode == 'DIVIDE':
+                            add_type = node_type + 'OctCosineMixTex'
+                            first = 1
+                            second = 2
+                        add = nodes.new(add_type)
+                    else:
+                        add_type = node_type + 'MixRGB'
+                        add = nodes.new(add_type)
+                        add.blend_type = mode
+                        first = 1
+                        second = 2
+                        if mode != 'MIX':
+                            add.inputs[0].default_value = 1.0
                     add.show_preview = False
                     add.hide = do_hide
                     if do_hide:
                         loc_y = loc_y - 50
-                    first = 1
-                    second = 2
                     add.width_hidden = 100.0
                 elif nodes_list == selected_math:
                     add_type = node_type + 'Math'
@@ -2824,7 +2863,10 @@ class NWMergeNodes(Operator, NWBase):
                     add.width_hidden = 100.0
                 elif nodes_list == selected_shader:
                     if mode == 'MIX':
-                        add_type = node_type + 'MixShader'
+                        if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                            add_type = node_type + 'OctMixMat'
+                        else:
+                            add_type = node_type + 'MixShader'
                         add = nodes.new(add_type)
                         add.hide = do_hide_shader
                         if do_hide_shader:
@@ -2833,7 +2875,10 @@ class NWMergeNodes(Operator, NWBase):
                         second = 2
                         add.width_hidden = 100.0
                     elif mode == 'ADD':
-                        add_type = node_type + 'AddShader'
+                        if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                            add_type = node_type + 'OctLayeredMat'
+                        else:
+                            add_type = node_type + 'AddShader'
                         add = nodes.new(add_type)
                         add.hide = do_hide_shader
                         if do_hide_shader:
