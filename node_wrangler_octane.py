@@ -17,14 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "Node Wrangler (Custom build for Octane)",
-    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (0, 9),
-    "blender": (2, 82, 0),
+    "name": "Node Wrangler",
+    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer",
+    "version": (3, 38),
+    "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow",
     "warning": "",
-    "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
+    "doc_url": "{BLENDER_MANUAL_URL}/addons/node/node_wrangler.html",
     "category": "Node",
 }
 
@@ -43,6 +43,7 @@ from bpy.props import (
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
+from nodeitems_utils import node_categories_iter
 from math import cos, sin, pi, hypot
 from os import path
 from glob import glob
@@ -54,7 +55,7 @@ from collections import namedtuple
 #################
 # rl_outputs:
 # list of outputs of Input Render Layer
-# with attributes determinig if pass is used,
+# with attributes determining if pass is used,
 # and MultiLayer EXR outputs names and corresponding render engines
 #
 # rl_outputs entry = (render_pass, rl_output_name, exr_output_name, in_eevee, in_cycles)
@@ -90,7 +91,7 @@ rl_outputs = (
 # shader nodes
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_input_nodes_props = (
     ('ShaderNodeAmbientOcclusion', 'AMBIENT_OCCLUSION', 'Ambient Occlusion'),
     ('ShaderNodeAttribute', 'ATTRIBUTE', 'Attribute'),
@@ -113,142 +114,9 @@ shaders_input_nodes_props = (
     ('ShaderNodeWireframe', 'WIREFRAME', 'Wireframe'),
 
 )
-
-octane_shader_node_layout = (
-    ('ShaderNodeOctDiffuseMat', 'ShaderNodeOctDiffuseMat', 'DiffuseMat'),
-    ('ShaderNodeOctGlossyMat', 'ShaderNodeOctGlossyMat', 'GlossyMat'),
-    ('ShaderNodeOctSpecularMat', 'ShaderNodeOctSpecularMat', 'SpecularMat'),
-    ('ShaderNodeOctMixMat', 'ShaderNodeOctMixMat', 'MixMat'),
-    ('ShaderNodeOctPortalMat', 'ShaderNodeOctPortalMat', 'PortalMat'),
-    ('ShaderNodeOctShadowCatcherMat', 'ShaderNodeOctShadowCatcherMat', 'ShadowCatcherMat'),
-    ('ShaderNodeOctToonMat', 'ShaderNodeOctToonMat', 'ToonMat'),
-    ('ShaderNodeOctMetalMat', 'ShaderNodeOctMetalMat', 'MetalMat'),
-    ('ShaderNodeOctUniversalMat', 'ShaderNodeOctUniversalMat', 'UniversalMat'),
-    ('ShaderNodeOctLayeredMat', 'ShaderNodeOctLayeredMat', 'LayeredMat'),
-    ('ShaderNodeOctCompositeMat', 'ShaderNodeOctCompositeMat', 'CompositeMat'),
-    ('ShaderNodeOctHairMat', 'ShaderNodeOctHairMat', 'HairMat'),
-
-)
-octane_layers_node_layout = (
-    ('ShaderNodeOctGroupLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
-    ('ShaderNodeOctDiffuseLayer', 'ShaderNodeOctGroupLayer', 'GroupLayer'),
-    ('ShaderNodeOctMetallicLayer', 'ShaderNodeOctMetallicLayer', 'MetallicLayer'),
-    ('ShaderNodeOctSheenLayer', 'ShaderNodeOctSheenLayer', 'SheenLayer'),
-    ('ShaderNodeOctSpecularLayer', 'ShaderNodeOctSpecularLayer', 'SpecularLayer'),
-
-)
-octane_textures_node_layout = (
-    ('ShaderNodeOctGaussSpectrumTex', 'ShaderNodeOctGaussSpectrumTex', 'GaussSpectrumTex'),
-    ('ShaderNodeOctRGBSpectrumTex', 'ShaderNodeOctRGBSpectrumTex', 'RGBSpectrumTex'),
-    ('ShaderNodeOctAlphaImageTex', 'ShaderNodeOctAlphaImageTex', 'AlphaImageTex'),
-    ('ShaderNodeOctFloatImageTex', 'ShaderNodeOctFloatImageTex', 'FloatImageTex'),
-    ('ShaderNodeOctImageTex', 'ShaderNodeOctImageTex', 'ImageTex'),
-    ('ShaderNodeOctImageTileTex', 'ShaderNodeOctImageTileTex', 'ImageTileTex'),
-    ('ShaderNodeOctInstanceColorTex', 'ShaderNodeOctInstanceColorTex', 'InstanceColorTex'),
-    
-)
-octane_textureprocedural_node_layout = (
-    ('ShaderNodeOctChecksTex', 'ShaderNodeOctChecksTex', 'ChecksTex'),
-    ('ShaderNodeOctDirtTex', 'ShaderNodeOctDirtTex', 'DirtTex'),
-    ('ShaderNodeOctFloatTex', 'ShaderNodeOctFloatTex', 'FloatTex'),
-    ('ShaderNodeOctMarbleTex', 'ShaderNodeOctMarbleTex', 'MarbleTex'),
-    ('ShaderNodeOctNoiseTex', 'ShaderNodeOctNoiseTex', 'NoiseTex'),
-    ('ShaderNodeOctOSLTex', 'ShaderNodeOctOSLTex', 'OSLTex'),
-    ('ShaderNodeOctPolygonSideTex', 'ShaderNodeOctPolygonSideTex', 'PolygonSideTex'),
-    ('ShaderNodeOctRandomColorTex', 'ShaderNodeOctRandomColorTex', 'RandomColorTex'),
-    ('ShaderNodeOctRidgedFractalTex', 'ShaderNodeOctRidgedFractalTex', 'RidgedFractalTex'),
-    ('ShaderNodeOctTriplanarTex', 'ShaderNodeOctTriplanarTex', 'TriplanarTex'),
-    ('ShaderNodeOctSawWaveTex', 'ShaderNodeOctSawWaveTex', 'SawWaveTex'),
-    ('ShaderNodeOctSineWaveTex', 'ShaderNodeOctSineWaveTex', 'SineWaveTex'),
-    ('ShaderNodeOctTriWaveTex', 'ShaderNodeOctTriWaveTex', 'TriWaveTex'),
-    ('ShaderNodeOctTurbulenceTex', 'ShaderNodeOctTurbulenceTex', 'TurbulenceTex'),
-    ('ShaderNodeOctUVWTransformTex', 'ShaderNodeOctUVWTransformTex', 'UVWTransformTex'),
-    ('ShaderNodeOctWTex', 'ShaderNodeOctWTex', 'WTex'),
-    ('ShaderNodeOctFloatVertexTex', 'ShaderNodeOctFloatVertexTex', 'FloatVertexTex'),
-    ('ShaderNodeOctColorVertexTex', 'ShaderNodeOctColorVertexTex', 'ColorVertexTex'),
-
-)
-
-octane_texturetools_node_layout = (
-    ('ShaderNodeOctAddTex', 'ShaderNodeOctAddTex', 'AddTex'),
-    ('ShaderNodeOctBakingTex', 'ShaderNodeOctBakingTex', 'BakingTex'),
-    ('ShaderNodeOctClampTex', 'ShaderNodeOctClampTex', 'ClampTex'),
-    ('ShaderNodeOctColorCorrectTex', 'ShaderNodeOctColorCorrectTex', 'ColorCorrectTex'),
-    ('ShaderNodeOctCompareTex', 'ShaderNodeOctCompareTex', 'CompareTex'),
-    ('ShaderNodeOctCosineMixTex', 'ShaderNodeOctCosineMixTex', 'CosineMixTex'),
-    ('ShaderNodeOctFalloffTex', 'ShaderNodeOctFalloffTex', 'FalloffTex'),
-    ('ShaderNodeOctGradientTex', 'ShaderNodeOctGradientTex', 'GradientTex'),
-    ('ShaderNodeOctInstanceRangeTex', 'ShaderNodeOctInstanceRangeTex', 'InstanceRangeTex'),
-    ('ShaderNodeOctInvertTex', 'ShaderNodeOctInvertTex', 'InvertTex'),
-    ('ShaderNodeOctMixTex', 'ShaderNodeOctMixTex', 'MixTex'),
-    ('ShaderNodeOctMultiplyTex', 'ShaderNodeOctMultiplyTex', 'MultiplyTex'),
-    ('ShaderNodeOctSubtractTex', 'ShaderNodeOctSubtractTex', 'SubtractTex'),
-    ('ShaderNodeOctToonRampTex', 'ShaderNodeOctToonRampTex', 'ToonRampTex'),
-    ('ShaderNodeOctVolumeRampTex', 'ShaderNodeOctVolumeRampTex', 'VolumeRampTex'),
-    ('ShaderNodeOctDisplacementTex', 'ShaderNodeOctDisplacementTex', 'DisplacementTex'),
-    ('ShaderNodeOctVertexDisplacementTex', 'ShaderNodeOctVertexDisplacementTex', 'VertexDisplacementTex'),
-    ('ShaderNodeOctVertexDisplacementMixerTex', 'ShaderNodeOctVertexDisplacementMixerTex', 'VertexDisplacementMixerTex'),
-
-)
-octane_emission_node_layout = (
-    ('ShaderNodeOctBlackBodyEmission', 'ShaderNodeOctBlackBodyEmission', 'BlackBodyEmission'),
-    ('ShaderNodeOctTextureEmission', 'ShaderNodeOctTextureEmission', 'TextureEmission'),
-    ('ShaderNodeOctToonDirectionLight', 'ShaderNodeOctToonDirectionLight', 'ToonDirectionLight'),
-    ('ShaderNodeOctToonPointLight', 'ShaderNodeOctToonPointLight', 'ToonPointLight'),
-
-)
-octane_mediums_node_layout = (
-    ('ShaderNodeOctAbsorptionMedium', 'ShaderNodeOctAbsorptionMedium', 'AbsorptionMedium'),
-    ('ShaderNodeOctScatteringMedium', 'ShaderNodeOctScatteringMedium', 'ScatteringMedium'),
-    ('ShaderNodeOctVolumeMedium', 'ShaderNodeOctVolumeMedium', 'VolumeMedium'),
-    ('ShaderNodeOctRandomWalkMedium', 'ShaderNodeOctRandomWalkMedium', 'RandomWalkMedium'),
-
-)
-octane_transfroms_node_layout = (
-    ('ShaderNodeOctScaleTransform', 'ShaderNodeOctScaleTransform', 'ScaleTransform'),
-    ('ShaderNodeOctRotateTransform', 'ShaderNodeOctRotateTransform', 'RotateTransform'),
-    ('ShaderNodeOctFullTransform', 'ShaderNodeOctFullTransform', 'FullTransform'),
-    ('ShaderNodeOct2DTransform', 'ShaderNodeOct2DTransform', '2DTransform'),
-    ('ShaderNodeOct3DTransform', 'ShaderNodeOct3DTransform', '3DTransform'),
-
-)
-octane_projections_node_layout = (
-    ('ShaderNodeOctBoxProjection', 'ShaderNodeOctBoxProjection', 'BoxProjection'),
-    ('ShaderNodeOctCylProjection', 'ShaderNodeOctCylProjection', 'CylProjection'),
-    ('ShaderNodeOctPerspProjection', 'ShaderNodeOctPerspProjection', 'PerspProjection'),
-    ('ShaderNodeOctSphericalProjection', 'ShaderNodeOctSphericalProjection', 'SphericalProjection'),
-    ('ShaderNodeOctUVWProjection', 'ShaderNodeOctUVWProjection', 'UVWProjection'),
-    ('ShaderNodeOctXYZProjection', 'ShaderNodeOctXYZProjection', 'XYZProjection'),
-    ('ShaderNodeOctTriplanarProjection', 'ShaderNodeOctTriplanarProjection', 'TriplanarProjection'),
-    ('ShaderNodeOctOSLUVProjection', 'ShaderNodeOctOSLUVProjection', 'OSLUVProjection'),
-    ('ShaderNodeOctOSLProjection', 'ShaderNodeOctOSLProjection', 'OSLProjection'),
-
-)
-octane_values_node_layout = (
-    ('ShaderNodeOctFloatValue', 'ShaderNodeOctFloatValue', 'FloatValue'),
-    ('ShaderNodeOctIntValue', 'ShaderNodeOctIntValue', 'IntValue'),
-    ('ShaderNodeOctSunDirectionValue', 'ShaderNodeOctSunDirectionValue', 'SunDirectionValue'),
-    ('ShaderNodeOctTextureReferenceValue', 'ShaderNodeOctTextureReferenceValue', 'TextureReferenceValue'),
-)
-octane_cameras_node_layout = (
-    ('ShaderNodeOctOSLCamera', 'ShaderNodeOctOSLCamera', 'OSLCamera'),
-    ('ShaderNodeOctOSLBakingCamera', 'ShaderNodeOctOSLBakingCamera', 'OSLBakingCamera'),
-)
-octane_vectrons_node_layout = (
-    ('ShaderNodeOctVectron', 'ShaderNodeOctVectron', 'Vectron'),
-)
-octane_roundedges_node_layout = (
-    ('ShaderNodeOctRoundEdges', 'ShaderNodeOctRoundEdges', 'RoundEdges'),
-)
-octane_enviroment_node_layout = (
-    ('ShaderNodeOctTextureEnvironment', 'ShaderNodeOctTextureEnvironment', 'TextureEnvironment'),
-    ('ShaderNodeOctDaylightEnvironment', 'ShaderNodeOctDaylightEnvironment', 'DaylightEnvironment'),
-    ('ShaderNodeOctPlanetaryEnvironment', 'ShaderNodeOctPlanetaryEnvironment', 'PlanetaryEnvironment'),
-)
-
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_output_nodes_props = (
     ('ShaderNodeOutputAOV', 'OUTPUT_AOV', 'AOV Output'),
     ('ShaderNodeOutputLight', 'OUTPUT_LIGHT', 'Light Output'),
@@ -257,7 +125,7 @@ shaders_output_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_shader_nodes_props = (
     ('ShaderNodeAddShader', 'ADD_SHADER', 'Add Shader'),
     ('ShaderNodeBsdfAnisotropic', 'BSDF_ANISOTROPIC', 'Anisotropic BSDF'),
@@ -282,7 +150,7 @@ shaders_shader_nodes_props = (
     ('ShaderNodeVolumeScatter', 'VOLUME_SCATTER', 'Volume Scatter'),
 )
 # (rna_type.identifier, type, rna_type.name)
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
 shaders_texture_nodes_props = (
     ('ShaderNodeTexBrick', 'TEX_BRICK', 'Brick Texture'),
@@ -302,7 +170,7 @@ shaders_texture_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_color_nodes_props = (
     ('ShaderNodeBrightContrast', 'BRIGHTCONTRAST', 'Bright Contrast'),
     ('ShaderNodeGamma', 'GAMMA', 'Gamma'),
@@ -314,7 +182,7 @@ shaders_color_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_vector_nodes_props = (
     ('ShaderNodeBump', 'BUMP', 'Bump'),
     ('ShaderNodeDisplacement', 'DISPLACEMENT', 'Displacement'),
@@ -327,7 +195,7 @@ shaders_vector_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_converter_nodes_props = (
     ('ShaderNodeBlackbody', 'BLACKBODY', 'Blackbody'),
     ('ShaderNodeClamp', 'CLAMP', 'Clamp'),
@@ -346,7 +214,7 @@ shaders_converter_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 shaders_layout_nodes_props = (
     ('NodeFrame', 'FRAME', 'Frame'),
     ('NodeReroute', 'REROUTE', 'Reroute'),
@@ -355,7 +223,7 @@ shaders_layout_nodes_props = (
 # compositing nodes
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_input_nodes_props = (
     ('CompositorNodeBokehImage', 'BOKEHIMAGE', 'Bokeh Image'),
     ('CompositorNodeImage', 'IMAGE', 'Image'),
@@ -370,7 +238,7 @@ compo_input_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_output_nodes_props = (
     ('CompositorNodeComposite', 'COMPOSITE', 'Composite'),
     ('CompositorNodeOutputFile', 'OUTPUT_FILE', 'File Output'),
@@ -380,7 +248,7 @@ compo_output_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_color_nodes_props = (
     ('CompositorNodeAlphaOver', 'ALPHAOVER', 'Alpha Over'),
     ('CompositorNodeBrightContrast', 'BRIGHTCONTRAST', 'Bright/Contrast'),
@@ -397,7 +265,7 @@ compo_color_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_converter_nodes_props = (
     ('CompositorNodePremulKey', 'PREMULKEY', 'Alpha Convert'),
     ('CompositorNodeValToRGB', 'VALTORGB', 'ColorRamp'),
@@ -417,7 +285,7 @@ compo_converter_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_filter_nodes_props = (
     ('CompositorNodeBilateralblur', 'BILATERALBLUR', 'Bilateral Blur'),
     ('CompositorNodeBlur', 'BLUR', 'Blur'),
@@ -436,7 +304,7 @@ compo_filter_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_vector_nodes_props = (
     ('CompositorNodeMapRange', 'MAP_RANGE', 'Map Range'),
     ('CompositorNodeMapValue', 'MAP_VALUE', 'Map Value'),
@@ -446,7 +314,7 @@ compo_vector_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_matte_nodes_props = (
     ('CompositorNodeBoxMask', 'BOXMASK', 'Box Mask'),
     ('CompositorNodeChannelMatte', 'CHANNEL_MATTE', 'Channel Key'),
@@ -464,7 +332,7 @@ compo_matte_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_distort_nodes_props = (
     ('CompositorNodeCornerPin', 'CORNERPIN', 'Corner Pin'),
     ('CompositorNodeCrop', 'CROP', 'Crop'),
@@ -482,7 +350,7 @@ compo_distort_nodes_props = (
 )
 # (rna_type.identifier, type, rna_type.name)
 # Keeping mixed case to avoid having to translate entries when adding new nodes in operators.
-# Keeping things in alphabetical orde so we don't need to sort later.
+# Keeping things in alphabetical order so we don't need to sort later.
 compo_layout_nodes_props = (
     ('NodeFrame', 'FRAME', 'Frame'),
     ('NodeReroute', 'REROUTE', 'Reroute'),
@@ -662,7 +530,7 @@ operations = [
     ('COSH', 'Hyperbolic Cosine', 'Hyperbolic Cosine Mode'),
     ('TANH', 'Hyperbolic Tangent', 'Hyperbolic Tangent Mode'),
     ('POWER', 'Power', 'Power Mode'),
-    ('LOGARITHM', 'Logatithm', 'Logarithm Mode'),
+    ('LOGARITHM', 'Logarithm', 'Logarithm Mode'),
     ('SQRT', 'Square Root', 'Square Root Mode'),
     ('INVERSE_SQRT', 'Inverse Square Root', 'Inverse Square Root Mode'),
     ('EXPONENT', 'Exponent', 'Exponent Mode'),
@@ -686,6 +554,14 @@ operations = [
     ('TRUNCATE', 'Truncate', 'Truncate Mode'),
     ('RADIANS', 'To Radians', 'To Radians Mode'),
     ('DEGREES', 'To Degrees', 'To Degrees Mode'),
+]
+
+# Operations used by the geometry boolean node and join geometry node
+geo_combine_operations = [
+    ('JOIN', 'Join Geometry', 'Join Geometry Mode'),
+    ('INTERSECT', 'Intersect', 'Intersect Mode'),
+    ('UNION', 'Union', 'Union Mode'),
+    ('DIFFERENCE', 'Difference', 'Difference Mode'),
 ]
 
 # in NWBatchChangeNodes additional types/operations. Can be used as 'items' for EnumProperty.
@@ -729,9 +605,15 @@ draw_color_sets = {
     )
 }
 
+viewer_socket_name = "tmp_viewer"
+
+def get_nodes_from_category(category_name, context):
+    for category in node_categories_iter(context):
+        if category.name == category_name:
+            return sorted(category.items(context), key=lambda node: node.label)
 
 def is_visible_socket(socket):
-    return not socket.hide and socket.enabled
+    return not socket.hide and socket.enabled and socket.type != 'CUSTOM'
 
 def nice_hotkey_name(punc):
     # convert the ugly string name into the actual character
@@ -812,40 +694,41 @@ def node_mid_pt(node, axis):
 
 def autolink(node1, node2, links):
     link_made = False
-
-    for outp in node1.outputs:
-        for inp in node2.inputs:
+    available_inputs = [inp for inp in node2.inputs if inp.enabled]
+    available_outputs = [outp for outp in node1.outputs if outp.enabled]
+    for outp in available_outputs:
+        for inp in available_inputs:
             if not inp.is_linked and inp.name == outp.name:
                 link_made = True
                 links.new(outp, inp)
                 return True
 
-    for outp in node1.outputs:
-        for inp in node2.inputs:
+    for outp in available_outputs:
+        for inp in available_inputs:
             if not inp.is_linked and inp.type == outp.type:
                 link_made = True
                 links.new(outp, inp)
                 return True
 
     # force some connection even if the type doesn't match
-    for outp in node1.outputs:
-        for inp in node2.inputs:
+    if available_outputs:
+        for inp in available_inputs:
             if not inp.is_linked:
                 link_made = True
-                links.new(outp, inp)
+                links.new(available_outputs[0], inp)
                 return True
 
     # even if no sockets are open, force one of matching type
-    for outp in node1.outputs:
-        for inp in node2.inputs:
+    for outp in available_outputs:
+        for inp in available_inputs:
             if inp.type == outp.type:
                 link_made = True
                 links.new(outp, inp)
                 return True
 
     # do something!
-    for outp in node1.outputs:
-        for inp in node2.inputs:
+    for outp in available_outputs:
+        for inp in available_inputs:
             link_made = True
             links.new(outp, inp)
             return True
@@ -1163,10 +1046,9 @@ def draw_callback_nodeoutline(self, context, mode):
 
         bgl.glDisable(bgl.GL_BLEND)
         bgl.glDisable(bgl.GL_LINE_SMOOTH)
-
-def get_nodes_links(context):
+def get_active_tree(context):
     tree = context.space_data.node_tree
-
+    path = []
     # Get nodes from currently edited tree.
     # If user is editing a group, space_data.node_tree is still the base level (outside group).
     # context.active_node is in the group though, so if space_data.node_tree.nodes.active is not
@@ -1175,8 +1057,70 @@ def get_nodes_links(context):
     if tree.nodes.active:
         while tree.nodes.active != context.active_node:
             tree = tree.nodes.active.node_tree
+            path.append(tree)
+    return tree, path
 
+def get_nodes_links(context):
+    tree, path = get_active_tree(context)
     return tree.nodes, tree.links
+
+def is_viewer_socket(socket):
+    # checks if a internal socket is a valid viewer socket
+    return socket.name == viewer_socket_name and socket.NWViewerSocket
+
+def get_internal_socket(socket):
+    #get the internal socket from a socket inside or outside the group
+    node = socket.node
+    if node.type == 'GROUP_OUTPUT':
+        source_iterator = node.inputs
+        iterator = node.id_data.outputs
+    elif node.type == 'GROUP_INPUT':
+        source_iterator = node.outputs
+        iterator = node.id_data.inputs
+    elif hasattr(node, "node_tree"):
+        if socket.is_output:
+            source_iterator = node.outputs
+            iterator = node.node_tree.outputs
+        else:
+            source_iterator = node.inputs
+            iterator = node.node_tree.inputs
+    else:
+        return None
+
+    for i, s in enumerate(source_iterator):
+        if s == socket:
+            break
+    return iterator[i]
+
+def is_viewer_link(link, output_node):
+    if "Emission Viewer" in link.to_node.name or link.to_node == output_node and link.to_socket == output_node.inputs[0]:
+        return True
+    if link.to_node.type == 'GROUP_OUTPUT':
+        socket = get_internal_socket(link.to_socket)
+        if is_viewer_socket(socket):
+            return True
+    return False
+
+def get_group_output_node(tree):
+    for node in tree.nodes:
+        if node.type == 'GROUP_OUTPUT' and node.is_active_output == True:
+            return node
+
+def get_output_location(tree):
+    # get right-most location
+    sorted_by_xloc = (sorted(tree.nodes, key=lambda x: x.location.x))
+    max_xloc_node = sorted_by_xloc[-1]
+    if max_xloc_node.name == 'Emission Viewer':
+        max_xloc_node = sorted_by_xloc[-2]
+
+    # get average y location
+    sum_yloc = 0
+    for node in tree.nodes:
+        sum_yloc += node.location.y
+
+    loc_x = max_xloc_node.location.x + max_xloc_node.dimensions.x + 80
+    loc_y = sum_yloc / len(tree.nodes)
+    return loc_x, loc_y
 
 # Principled prefs
 class NWPrincipledPreferences(bpy.types.PropertyGroup):
@@ -1238,14 +1182,6 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         ),
         default='CENTER',
         description="When merging nodes with the Ctrl+Numpad0 hotkey (and similar) specify the position of the new nodes")
-    texture_setup_displacement: EnumProperty(
-        name="Shader's texture setup displacement",
-        items=(
-            ("ShaderNodeOctDisplacementTex", "Texture Displacement node", "Setup node will use Texture Displacement node"),
-            ("ShaderNodeOctVertexDisplacementTex", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
-        ),
-        default='ShaderNodeOctDisplacementTex',
-        description="When setup textures for shader, for displacement it'll use this node")
 
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
@@ -1269,7 +1205,6 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         col = layout.column()
         col.prop(self, "merge_position")
         col.prop(self, "merge_hide")
-        col.prop(self, "texture_setup_displacement")
 
         box = layout.box()
         col = box.column(align=True)
@@ -1316,7 +1251,7 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
 
 def nw_check(context):
     space = context.space_data
-    valid_trees = ["ShaderNodeTree", "CompositorNodeTree", "TextureNodeTree"]
+    valid_trees = ["ShaderNodeTree", "CompositorNodeTree", "TextureNodeTree", "GeometryNodeTree"]
 
     valid = False
     if space.type == 'NODE_EDITOR' and space.node_tree is not None and space.tree_type in valid_trees:
@@ -1678,14 +1613,17 @@ class NWSwapLinks(Operator, NWBase):
 
         # Swap Inputs
         elif len(selected_nodes) == 1:
+            if n1.inputs and n1.inputs[0].is_multi_input:
+                self.report({'WARNING'}, "Can't swap inputs of a multi input socket!")
+                return {'FINISHED'}
             if n1.inputs:
                 types = []
                 i=0
                 for i1 in n1.inputs:
-                    if i1.is_linked:
+                    if i1.is_linked and not i1.is_multi_input:
                         similar_types = 0
                         for i2 in n1.inputs:
-                            if i1.type == i2.type and i2.is_linked:
+                            if i1.type == i2.type and i2.is_linked and not i2.is_multi_input:
                                 similar_types += 1
                         types.append ([i1, similar_types, i])
                     i += 1
@@ -1766,18 +1704,22 @@ class NWAddAttrNode(Operator, NWBase):
         nodes.active.attribute_name = self.attr_name
         return {'FINISHED'}
 
-
-class NWEmissionViewer(Operator, NWBase):
-    bl_idname = "node.nw_emission_viewer"
-    bl_label = "Emission Viewer"
-    bl_description = "Connect active node to Emission Shader for shadeless previews"
+class NWPreviewNode(Operator, NWBase):
+    bl_idname = "node.nw_preview_node"
+    bl_label = "Preview Node"
+    bl_description = "Connect active node to Emission Shader for shadeless previews, or to the geometry node tree's output"
     bl_options = {'REGISTER', 'UNDO'}
+
+    def __init__(self):
+        self.shader_output_type = ""
+        self.shader_output_ident = ""
+        self.shader_viewer_ident = ""
 
     @classmethod
     def poll(cls, context):
         if nw_check(context):
             space = context.space_data
-            if space.tree_type == 'ShaderNodeTree':
+            if space.tree_type == 'ShaderNodeTree' or space.tree_type == 'GeometryNodeTree':
                 if context.active_node:
                     if context.active_node.type != "OUTPUT_MATERIAL" or context.active_node.type != "OUTPUT_WORLD":
                         return True
@@ -1785,67 +1727,266 @@ class NWEmissionViewer(Operator, NWBase):
                     return True
         return False
 
+    def ensure_viewer_socket(self, node, socket_type, connect_socket=None):
+        #check if a viewer output already exists in a node group otherwise create
+        if hasattr(node, "node_tree"):
+            index = None
+            if len(node.node_tree.outputs):
+                free_socket = None
+                for i, socket in enumerate(node.node_tree.outputs):
+                    if is_viewer_socket(socket) and is_visible_socket(node.outputs[i]) and socket.type == socket_type:
+                        #if viewer output is already used but leads to the same socket we can still use it
+                        is_used = self.is_socket_used_other_mats(socket)
+                        if is_used:
+                            if connect_socket == None:
+                                continue
+                            groupout = get_group_output_node(node.node_tree)
+                            groupout_input = groupout.inputs[i]
+                            links = groupout_input.links
+                            if connect_socket not in [link.from_socket for link in links]:
+                                continue
+                            index=i
+                            break
+                        if not free_socket:
+                            free_socket = i
+                if not index and free_socket:
+                    index = free_socket
+
+            if not index:
+                #create viewer socket
+                node.node_tree.outputs.new(socket_type, viewer_socket_name)
+                index = len(node.node_tree.outputs) - 1
+                node.node_tree.outputs[index].NWViewerSocket = True
+            return index
+
+    def init_shader_variables(self, space, shader_type):
+        if shader_type == 'OBJECT':
+            if space.id not in [light for light in bpy.data.lights]:  # cannot use bpy.data.lights directly as iterable
+                self.shader_output_type = "OUTPUT_MATERIAL"
+                self.shader_output_ident = "ShaderNodeOutputMaterial"
+                self.shader_viewer_ident = "ShaderNodeEmission"
+            else:
+                self.shader_output_type = "OUTPUT_LIGHT"
+                self.shader_output_ident = "ShaderNodeOutputLight"
+                self.shader_viewer_ident = "ShaderNodeEmission"
+
+        elif shader_type == 'WORLD':
+            self.shader_output_type = "OUTPUT_WORLD"
+            self.shader_output_ident = "ShaderNodeOutputWorld"
+            self.shader_viewer_ident = "ShaderNodeBackground"
+
+    def get_shader_output_node(self, tree):
+        for node in tree.nodes:
+            if node.type == self.shader_output_type and node.is_active_output == True:
+                return node
+
+    @classmethod
+    def ensure_group_output(cls, tree):
+        #check if a group output node exists otherwise create
+        groupout = get_group_output_node(tree)
+        if not groupout:
+            groupout = tree.nodes.new('NodeGroupOutput')
+            loc_x, loc_y = get_output_location(tree)
+            groupout.location.x = loc_x
+            groupout.location.y = loc_y
+            groupout.select = False
+            # So that we don't keep on adding new group outputs
+            groupout.is_active_output = True
+        return groupout
+
+    @classmethod
+    def search_sockets(cls, node, sockets, index=None):
+        # recursively scan nodes for viewer sockets and store in list
+        for i, input_socket in enumerate(node.inputs):
+            if index and i != index:
+                continue
+            if len(input_socket.links):
+                link = input_socket.links[0]
+                next_node = link.from_node
+                external_socket = link.from_socket
+                if hasattr(next_node, "node_tree"):
+                    for socket_index, s in enumerate(next_node.outputs):
+                        if s == external_socket:
+                            break
+                    socket = next_node.node_tree.outputs[socket_index]
+                    if is_viewer_socket(socket) and socket not in sockets:
+                        sockets.append(socket)
+                        #continue search inside of node group but restrict socket to where we came from
+                        groupout = get_group_output_node(next_node.node_tree)
+                        cls.search_sockets(groupout, sockets, index=socket_index)
+
+    @classmethod
+    def scan_nodes(cls, tree, sockets):
+        # get all viewer sockets in a material tree
+        for node in tree.nodes:
+            if hasattr(node, "node_tree"):
+                for socket in node.node_tree.outputs:
+                    if is_viewer_socket(socket) and (socket not in sockets):
+                        sockets.append(socket)
+                cls.scan_nodes(node.node_tree, sockets)
+
+    def link_leads_to_used_socket(self, link):
+        #return True if link leads to a socket that is already used in this material
+        socket = get_internal_socket(link.to_socket)
+        return (socket and self.is_socket_used_active_mat(socket))
+
+    def is_socket_used_active_mat(self, socket):
+        #ensure used sockets in active material is calculated and check given socket
+        if not hasattr(self, "used_viewer_sockets_active_mat"):
+            self.used_viewer_sockets_active_mat = []
+            materialout = self.get_shader_output_node(bpy.context.space_data.node_tree)
+            if materialout:
+                emission = self.get_viewer_node(materialout)
+                self.search_sockets((emission if emission else materialout), self.used_viewer_sockets_active_mat)
+        return socket in self.used_viewer_sockets_active_mat
+
+    def is_socket_used_other_mats(self, socket):
+        #ensure used sockets in other materials are calculated and check given socket
+        if not hasattr(self, "used_viewer_sockets_other_mats"):
+            self.used_viewer_sockets_other_mats = []
+            for mat in bpy.data.materials:
+                if mat.node_tree == bpy.context.space_data.node_tree or not hasattr(mat.node_tree, "nodes"):
+                    continue
+                # get viewer node
+                materialout = self.get_shader_output_node(mat.node_tree)
+                if materialout:
+                    emission = self.get_viewer_node(materialout)
+                    self.search_sockets((emission if emission else materialout), self.used_viewer_sockets_other_mats)
+        return socket in self.used_viewer_sockets_other_mats
+
+    @staticmethod
+    def get_viewer_node(materialout):
+        input_socket = materialout.inputs[0]
+        if len(input_socket.links) > 0:
+            node = input_socket.links[0].from_node
+            if node.type == 'EMISSION' and node.name == "Emission Viewer":
+                return node
+
     def invoke(self, context, event):
         space = context.space_data
         shader_type = space.shader_type
-        if shader_type == 'OBJECT':
-            if space.id not in [light for light in bpy.data.lights]:  # cannot use bpy.data.lights directly as iterable
-                shader_output_type = "OUTPUT_MATERIAL"
-                shader_output_ident = "ShaderNodeOutputMaterial"
-                shader_viewer_ident = "ShaderNodeEmission"
-            else:
-                shader_output_type = "OUTPUT_LIGHT"
-                shader_output_ident = "ShaderNodeOutputLight"
-                shader_viewer_ident = "ShaderNodeEmission"
-
-        elif shader_type == 'WORLD':
-            shader_output_type = "OUTPUT_WORLD"
-            shader_output_ident = "ShaderNodeOutputWorld"
-            shader_viewer_ident = "ShaderNodeBackground"
+        self.init_shader_variables(space, shader_type)
         shader_types = [x[1] for x in shaders_shader_nodes_props]
         mlocx = event.mouse_region_x
         mlocy = event.mouse_region_y
         select_node = bpy.ops.node.select(mouse_x=mlocx, mouse_y=mlocy, extend=False)
         if 'FINISHED' in select_node:  # only run if mouse click is on a node
-            nodes, links = get_nodes_links(context)
-            in_group = context.active_node != space.node_tree.nodes.active
+            active_tree, path_to_tree = get_active_tree(context)
+            nodes, links = active_tree.nodes, active_tree.links
+            base_node_tree = space.node_tree
             active = nodes.active
+
+            # For geometry node trees we just connect to the group output,
+            # because there is no "viewer node" yet.
+            if space.tree_type == "GeometryNodeTree":
+                valid = False
+                if active:
+                    for out in active.outputs:
+                        if is_visible_socket(out):
+                            valid = True
+                            break
+                # Exit early
+                if not valid:
+                    return {'FINISHED'}
+                
+                delete_sockets = []
+
+                # Scan through all nodes in tree including nodes inside of groups to find viewer sockets
+                self.scan_nodes(base_node_tree, delete_sockets)
+
+                # Find (or create if needed) the output of this node tree
+                geometryoutput = self.ensure_group_output(base_node_tree)
+
+                # Analyze outputs, make links
+                out_i = None
+                valid_outputs = []
+                for i, out in enumerate(active.outputs):
+                    if is_visible_socket(out) and out.type == 'GEOMETRY':
+                        valid_outputs.append(i)
+                if valid_outputs:
+                    out_i = valid_outputs[0]  # Start index of node's outputs
+                for i, valid_i in enumerate(valid_outputs):
+                    for out_link in active.outputs[valid_i].links:
+                        if is_viewer_link(out_link, geometryoutput):
+                            if nodes == base_node_tree.nodes or self.link_leads_to_used_socket(out_link):
+                                if i < len(valid_outputs) - 1:
+                                    out_i = valid_outputs[i + 1]
+                                else:
+                                    out_i = valid_outputs[0]
+
+                make_links = []  # store sockets for new links
+                delete_nodes = [] # store unused nodes to delete in the end
+                if active.outputs:
+                    # If there is no 'GEOMETRY' output type - We can't preview the node
+                    if out_i is None:
+                        return {'FINISHED'}
+                    socket_type = 'GEOMETRY'
+                    # Find an input socket of the output of type geometry 
+                    geometryoutindex = None
+                    for i,inp in enumerate(geometryoutput.inputs):
+                        if inp.type == socket_type:
+                            geometryoutindex = i
+                            break
+                    if geometryoutindex is None:
+                        # Create geometry socket
+                        geometryoutput.inputs.new(socket_type, 'Geometry')
+                        geometryoutindex = len(geometryoutput.inputs) - 1
+
+                    make_links.append((active.outputs[out_i], geometryoutput.inputs[geometryoutindex]))
+                    output_socket = geometryoutput.inputs[geometryoutindex]
+                    for li_from, li_to in make_links:
+                        base_node_tree.links.new(li_from, li_to)
+                    tree = base_node_tree
+                    link_end = output_socket
+                    while tree.nodes.active != active:
+                        node = tree.nodes.active
+                        index = self.ensure_viewer_socket(node,'NodeSocketGeometry', connect_socket=active.outputs[out_i] if node.node_tree.nodes.active == active else None)
+                        link_start = node.outputs[index]
+                        node_socket = node.node_tree.outputs[index]
+                        if node_socket in delete_sockets:
+                            delete_sockets.remove(node_socket)
+                        tree.links.new(link_start, link_end)
+                        # Iterate
+                        link_end = self.ensure_group_output(node.node_tree).inputs[index]
+                        tree = tree.nodes.active.node_tree
+                    tree.links.new(active.outputs[out_i], link_end)
+
+                # Delete sockets
+                for socket in delete_sockets:
+                    tree = socket.id_data
+                    tree.outputs.remove(socket)
+
+                # Delete nodes
+                for tree, node in delete_nodes:
+                    tree.nodes.remove(node)
+
+                nodes.active = active
+                active.select = True
+                force_update(context)
+                return {'FINISHED'}
+
+
+            # What follows is code for the shader editor
             output_types = [x[1] for x in shaders_output_nodes_props]
             valid = False
             if active:
-                if (active.name != "Emission Viewer") and (active.type not in output_types) and not in_group:
+                if (active.name != "Emission Viewer") and (active.type not in output_types):
                     for out in active.outputs:
                         if is_visible_socket(out):
                             valid = True
                             break
             if valid:
-                # get material_output node, store selection, deselect all
+                # get material_output node
                 materialout = None  # placeholder node
-                selection = []
-                for node in nodes:
-                    if node.type == shader_output_type:
-                        materialout = node
-                    if node.select:
-                        selection.append(node.name)
-                    node.select = False
+                delete_sockets = []
+
+                #scan through all nodes in tree including nodes inside of groups to find viewer sockets
+                self.scan_nodes(base_node_tree, delete_sockets)
+
+                materialout = self.get_shader_output_node(base_node_tree)
                 if not materialout:
-                    # get right-most location
-                    sorted_by_xloc = (sorted(nodes, key=lambda x: x.location.x))
-                    max_xloc_node = sorted_by_xloc[-1]
-                    if max_xloc_node.name == 'Emission Viewer':
-                        max_xloc_node = sorted_by_xloc[-2]
-
-                    # get average y location
-                    sum_yloc = 0
-                    for node in nodes:
-                        sum_yloc += node.location.y
-
-                    new_locx = max_xloc_node.location.x + max_xloc_node.dimensions.x + 80
-                    new_locy = sum_yloc / len(nodes)
-
-                    materialout = nodes.new(shader_output_ident)
-                    materialout.location.x = new_locx
-                    materialout.location.y = new_locy
+                    materialout = base_node_tree.nodes.new(self.shader_output_ident)
+                    materialout.location = get_output_location(base_node_tree)
                     materialout.select = False
                 # Analyze outputs, add "Emission Viewer" if needed, make links
                 out_i = None
@@ -1857,48 +1998,38 @@ class NWEmissionViewer(Operator, NWBase):
                     out_i = valid_outputs[0]  # Start index of node's outputs
                 for i, valid_i in enumerate(valid_outputs):
                     for out_link in active.outputs[valid_i].links:
-                        if "Emission Viewer" in out_link.to_node.name or (out_link.to_node == materialout and out_link.to_socket == materialout.inputs[0]):
-                            if i < len(valid_outputs) - 1:
-                                out_i = valid_outputs[i + 1]
-                            else:
-                                out_i = valid_outputs[0]
+                        if is_viewer_link(out_link, materialout):
+                            if nodes == base_node_tree.nodes or self.link_leads_to_used_socket(out_link):
+                                if i < len(valid_outputs) - 1:
+                                    out_i = valid_outputs[i + 1]
+                                else:
+                                    out_i = valid_outputs[0]
+
                 make_links = []  # store sockets for new links
-                for node in nodes:	
-                    if node.name == 'Oct Viewer Emission':	
-                            node.select = True	
-                            bpy.ops.node.delete()
+                delete_nodes = [] # store unused nodes to delete in the end
                 if active.outputs:
                     # If output type not 'SHADER' - "Emission Viewer" needed
                     if active.outputs[out_i].type != 'SHADER':
+                        socket_type = 'NodeSocketColor'
                         # get Emission Viewer node
                         emission_exists = False
-                        emission_placeholder = nodes[0]
-                        for node in nodes:
+                        emission_placeholder = base_node_tree.nodes[0]
+                        for node in base_node_tree.nodes:
                             if "Emission Viewer" in node.name:
                                 emission_exists = True
                                 emission_placeholder = node
                         if not emission_exists:
-                            # Start of the patch by AiSatan for Octane
-                            
-                            if context.scene.render.engine == 'octane':
-                                emission = nodes.new("ShaderNodeOctDiffuseMat")
-                                emission.label = "Octane Viewer"
-                                emission.inputs[0].default_value = (0, 0, 0, 1)  
-                            else:
-                                emission = nodes.new(shader_viewer_ident)
-                                emission.label = "Cycle/Eevee Viewer"
-
+                            emission = base_node_tree.nodes.new(self.shader_viewer_ident)
                             emission.hide = True
                             emission.location = [materialout.location.x, (materialout.location.y + 40)]
+                            emission.label = "Viewer"
                             emission.name = "Emission Viewer"
                             emission.use_custom_color = True
                             emission.color = (0.6, 0.5, 0.4)
                             emission.select = False
-                            # End of the patch for Octane
                         else:
                             emission = emission_placeholder
-                        if context.scene.render.engine != 'octane':	
-                            make_links.append((active.outputs[out_i], emission.inputs[0]))
+                        output_socket = emission.inputs[0]
 
                         # If Viewer is connected to output by user, don't change those connections (patch by gandalf3)
                         if emission.outputs[0].links.__len__() > 0:
@@ -1916,33 +2047,49 @@ class NWEmissionViewer(Operator, NWBase):
                         intensity /= pow(2, (context.scene.view_settings.exposure))  # CM exposure is measured in stops/EVs (2^x)
                         emission.inputs[1].default_value = intensity
 
-                        if context.scene.render.engine == 'octane':	
-                            ExposureComp = nodes.new("ShaderNodeOctTextureEmission")	
-                            ExposureComp.label = "Octane Viewer"	
-                            ExposureComp.hide = True	
-                            ExposureComp.inputs[1].default_value = (1/context.scene.oct_view_cam.exposure)	
-                            ExposureComp.inputs[2].default_value = True	
-                            ExposureComp.inputs[8].default_value = False	
-                            ExposureComp.inputs[9].default_value = False	
-                            ExposureComp.location = [materialout.location.x, (materialout.location.y + 45)]	
-                            ExposureComp.name = "Oct Viewer Emission"	
-                            make_links.append((ExposureComp.outputs[0],emission.inputs[11]))	
-                            make_links.append((ExposureComp.inputs[0],active.outputs[0]))
                     else:
                         # Output type is 'SHADER', no Viewer needed. Delete Viewer if exists.
-                        make_links.append((active.outputs[out_i], materialout.inputs[1 if active.outputs[out_i].name == "Volume" else 0]))
-                        for node in nodes:
+                        socket_type = 'NodeSocketShader'
+                        materialout_index = 1 if active.outputs[out_i].name == "Volume" else 0
+                        make_links.append((active.outputs[out_i], materialout.inputs[materialout_index]))
+                        output_socket = materialout.inputs[materialout_index]
+                        for node in base_node_tree.nodes:
                             if node.name == 'Emission Viewer':
-                                node.select = True
-                                bpy.ops.node.delete()
+                                delete_nodes.append((base_node_tree, node))
                     for li_from, li_to in make_links:
-                        links.new(li_from, li_to)
-                # Restore selection
+                        base_node_tree.links.new(li_from, li_to)
+
+                    # Crate links through node groups until we reach the active node
+                    tree = base_node_tree
+                    link_end = output_socket
+                    while tree.nodes.active != active:
+                        node = tree.nodes.active
+                        index = self.ensure_viewer_socket(node, socket_type, connect_socket=active.outputs[out_i] if node.node_tree.nodes.active == active else None)
+                        link_start = node.outputs[index]
+                        node_socket = node.node_tree.outputs[index]
+                        if node_socket in delete_sockets:
+                            delete_sockets.remove(node_socket)
+                        tree.links.new(link_start, link_end)
+                        # Iterate
+                        link_end = self.ensure_group_output(node.node_tree).inputs[index]
+                        tree = tree.nodes.active.node_tree
+                    tree.links.new(active.outputs[out_i], link_end)
+
+                # Delete sockets
+                for socket in delete_sockets:
+                    if not self.is_socket_used_other_mats(socket):
+                        tree = socket.id_data
+                        tree.outputs.remove(socket)
+
+                # Delete nodes
+                for tree, node in delete_nodes:
+                    tree.nodes.remove(node)
+
                 nodes.active = active
-                for node in nodes:
-                    if node.name in selection:
-                        node.select = True
+                active.select = True
+
                 force_update(context)
+
             return {'FINISHED'}
         else:
             return {'CANCELLED'}
@@ -1986,10 +2133,21 @@ class NWFrameSelected(Operator, NWBase):
         return {'FINISHED'}
 
 
-class NWReloadImages(Operator, NWBase):
+class NWReloadImages(Operator):
     bl_idname = "node.nw_reload_images"
     bl_label = "Reload Images"
     bl_description = "Update all the image nodes to match their files on disk"
+
+    @classmethod
+    def poll(cls, context):
+        valid = False
+        if nw_check(context) and context.space_data.tree_type != 'GeometryNodeTree':
+            if context.active_node is not None:
+                for out in context.active_node.outputs:
+                    if is_visible_socket(out):
+                        valid = True
+                        break
+        return valid
 
     def execute(self, context):
         nodes, links = get_nodes_links(context)
@@ -2056,26 +2214,19 @@ class NWSwitchNodeType(Operator, NWBase):
         list(texture_textures_nodes_props) +
         list(texture_converter_nodes_props) +
         list(texture_distort_nodes_props) +
-        list(texture_layout_nodes_props) +
-        list(octane_shader_node_layout) +
-        list(octane_layers_node_layout) +
-        list(octane_textures_node_layout) +
-        list(octane_texturetools_node_layout) +        
-        list(octane_textureprocedural_node_layout) +
-        list(octane_emission_node_layout) +
-        list(octane_mediums_node_layout) +
-        list(octane_transfroms_node_layout) +
-        list(octane_projections_node_layout) +
-        list(octane_values_node_layout) +
-        list(octane_cameras_node_layout) +
-        list(octane_vectrons_node_layout) +
-        list(octane_roundedges_node_layout) +
-        list(octane_enviroment_node_layout)
+        list(texture_layout_nodes_props)
+    )
+
+    geo_to_type: StringProperty(
+        name="Switch to type",
+        default = '',
     )
 
     def execute(self, context):
         nodes, links = get_nodes_links(context)
         to_type = self.to_type
+        if self.geo_to_type != '':
+            to_type = self.geo_to_type
         # Those types of nodes will not swap.
         src_excludes = ('NodeFrame')
         # Those attributes of nodes will be copied if possible
@@ -2083,7 +2234,6 @@ class NWSwitchNodeType(Operator, NWBase):
                          'show_options', 'show_preview', 'show_texture',
                          'use_alpha', 'use_clamp', 'use_custom_color', 'location'
                          )
-        print("test")
         selected = [n for n in nodes if n.select]
         reselect = []
         for node in [n for n in selected if
@@ -2255,8 +2405,8 @@ class NWMergeNodes(Operator, NWBase):
 
     mode: EnumProperty(
         name="mode",
-        description="All possible blend types and math operations",
-        items=blend_types + [op for op in operations if op not in blend_types],
+        description="All possible blend types, boolean operations and math operations",
+        items= blend_types + [op for op in geo_combine_operations if op not in blend_types] + [op for op in operations if op not in blend_types],
     )
     merge_type: EnumProperty(
         name="merge type",
@@ -2264,12 +2414,81 @@ class NWMergeNodes(Operator, NWBase):
         items=(
             ('AUTO', 'Auto', 'Automatic Output Type Detection'),
             ('SHADER', 'Shader', 'Merge using ADD or MIX Shader'),
+            ('GEOMETRY', 'Geometry', 'Merge using Boolean or Join Geometry Node'),
             ('MIX', 'Mix Node', 'Merge using Mix Nodes'),
             ('MATH', 'Math Node', 'Merge using Math Nodes'),
             ('ZCOMBINE', 'Z-Combine Node', 'Merge using Z-Combine Nodes'),
             ('ALPHAOVER', 'Alpha Over Node', 'Merge using Alpha Over Nodes'),
         ),
     )
+
+    # Check if the link connects to a node that is in selected_nodes
+    # If not, then check recursively for each link in the nodes outputs.
+    # If yes, return True. If the recursion stops without finding a node
+    # in selected_nodes, it returns False. The depth is used to prevent 
+    # getting stuck in a loop because of an already present cycle.
+    @staticmethod
+    def link_creates_cycle(link, selected_nodes, depth=0)->bool:
+        if depth > 255:
+            # We're stuck in a cycle, but that cycle was already present,
+            # so we return False. 
+            # NOTE: The number 255 is arbitrary, but seems to work well.
+            return False
+        node = link.to_node
+        if node in selected_nodes:
+            return True
+        if not node.outputs:
+            return False
+        for output in node.outputs:
+            if output.is_linked:
+                for olink in output.links:
+                    if NWMergeNodes.link_creates_cycle(olink, selected_nodes, depth+1):
+                        return True
+        # None of the outputs found a node in selected_nodes, so there is no cycle.
+        return False
+    
+    # Merge the nodes in `nodes_list` with a node of type `node_name` that has a multi_input socket.
+    # The parameters `socket_indices` gives the indices of the node sockets in the order that they should
+    # be connected. The last one is assumed to be a multi input socket.
+    # For convenience the node is returned.
+    @staticmethod
+    def merge_with_multi_input(nodes_list, merge_position,do_hide, loc_x, links, nodes, node_name, socket_indices):
+        # The y-location of the last node
+        loc_y = nodes_list[-1][2]
+        if merge_position == 'CENTER':
+            # Average the y-location
+            for i in range(len(nodes_list)-1):
+                loc_y += nodes_list[i][2]
+            loc_y = loc_y/len(nodes_list)
+        new_node = nodes.new(node_name)
+        new_node.hide = do_hide
+        new_node.location.x = loc_x
+        new_node.location.y = loc_y
+        selected_nodes = [nodes[node_info[0]] for node_info in nodes_list]
+        prev_links = []
+        outputs_for_multi_input = []
+        for i,node in enumerate(selected_nodes):
+            node.select = False
+            # Search for the first node which had output links that do not create
+            # a cycle, which we can then reconnect afterwards.
+            if prev_links == [] and node.outputs[0].is_linked:
+                prev_links = [link for link in node.outputs[0].links if not NWMergeNodes.link_creates_cycle(link, selected_nodes)]
+            # Get the index of the socket, the last one is a multi input, and is thus used repeatedly
+            # To get the placement to look right we need to reverse the order in which we connect the
+            # outputs to the multi input socket.
+            if i < len(socket_indices) - 1:
+                ind = socket_indices[i]
+                links.new(node.outputs[0], new_node.inputs[ind])
+            else:
+                outputs_for_multi_input.insert(0, node.outputs[0])
+        if outputs_for_multi_input != []:
+            ind = socket_indices[-1]
+            for output in outputs_for_multi_input:
+                links.new(output, new_node.inputs[ind])
+        if prev_links != []:
+            for link in prev_links:
+                links.new(new_node.outputs[0], link.to_node.inputs[0])
+        return new_node
 
     def execute(self, context):
         settings = context.preferences.addons[__name__].preferences
@@ -2285,6 +2504,8 @@ class NWMergeNodes(Operator, NWBase):
             do_hide = True
 
         tree_type = context.space_data.node_tree.type
+        if tree_type == 'GEOMETRY':
+            node_type = 'GeometryNode'
         if tree_type == 'COMPOSITING':
             node_type = 'CompositorNode'
         elif tree_type == 'SHADER':
@@ -2300,9 +2521,16 @@ class NWMergeNodes(Operator, NWBase):
         if (merge_type == 'ZCOMBINE' or merge_type == 'ALPHAOVER') and tree_type != 'COMPOSITING':
             merge_type = 'MIX'
             mode = 'MIX'
+        if (merge_type != 'MATH' and merge_type != 'GEOMETRY') and tree_type == 'GEOMETRY':
+            merge_type = 'AUTO'
+        # The math nodes used for geometry nodes are of type 'ShaderNode'
+        if merge_type == 'MATH' and tree_type == 'GEOMETRY':
+            node_type = 'ShaderNode'
         selected_mix = []  # entry = [index, loc]
         selected_shader = []  # entry = [index, loc]
+        selected_geometry = [] # entry = [index, loc]
         selected_math = []  # entry = [index, loc]
+        selected_vector = [] # entry = [index, loc]
         selected_z = []  # entry = [index, loc]
         selected_alphaover = []  # entry = [index, loc]
 
@@ -2311,17 +2539,29 @@ class NWMergeNodes(Operator, NWBase):
                 if merge_type == 'AUTO':
                     for (type, types_list, dst) in (
                             ('SHADER', ('MIX', 'ADD'), selected_shader),
+                            ('GEOMETRY', [t[0] for t in geo_combine_operations], selected_geometry),
                             ('RGBA', [t[0] for t in blend_types], selected_mix),
                             ('VALUE', [t[0] for t in operations], selected_math),
+                            ('VECTOR', [], selected_vector),
                     ):
                         output_type = node.outputs[0].type
                         valid_mode = mode in types_list
+                        # When mode is 'MIX' we have to cheat since the mix node is not used in
+                        # geometry nodes.
+                        if tree_type == 'GEOMETRY':
+                            if mode == 'MIX':
+                                if output_type == 'VALUE' and type == 'VALUE':
+                                    valid_mode = True
+                                elif output_type == 'VECTOR' and type == 'VECTOR':
+                                    valid_mode = True
+                                elif type == 'GEOMETRY':
+                                    valid_mode = True
                         # When mode is 'MIX' use mix node for both 'RGBA' and 'VALUE' output types.
                         # Cheat that output type is 'RGBA',
                         # and that 'MIX' exists in math operations list.
                         # This way when selected_mix list is analyzed:
                         # Node data will be appended even though it doesn't meet requirements.
-                        if output_type != 'SHADER' and mode == 'MIX':
+                        elif output_type != 'SHADER' and mode == 'MIX':
                             output_type = 'RGBA'
                             valid_mode = True
                         if output_type == type and valid_mode:
@@ -2329,6 +2569,7 @@ class NWMergeNodes(Operator, NWBase):
                 else:
                     for (type, types_list, dst) in (
                             ('SHADER', ('MIX', 'ADD'), selected_shader),
+                            ('GEOMETRY', [t[0] for t in geo_combine_operations], selected_geometry),
                             ('MIX', [t[0] for t in blend_types], selected_mix),
                             ('MATH', [t[0] for t in operations], selected_math),
                             ('ZCOMBINE', ('MIX', ), selected_z),
@@ -2342,189 +2583,191 @@ class NWMergeNodes(Operator, NWBase):
         if selected_mix and selected_math and merge_type == 'AUTO':
             selected_mix += selected_math
             selected_math = []
-
-        for nodes_list in [selected_mix, selected_shader, selected_math, selected_z, selected_alphaover]:
-            if nodes_list:
-                count_before = len(nodes)
-                # sort list by loc_x - reversed
-                nodes_list.sort(key=lambda k: k[1], reverse=True)
-                # get maximum loc_x
-                loc_x = nodes_list[0][1] + nodes_list[0][3] + 70
-                nodes_list.sort(key=lambda k: k[2], reverse=True)
-                if merge_position == 'CENTER':
-                    loc_y = ((nodes_list[len(nodes_list) - 1][2]) + (nodes_list[len(nodes_list) - 2][2])) / 2  # average yloc of last two nodes (lowest two)
-                    if nodes_list[len(nodes_list) - 1][-1] == True:  # if last node is hidden, mix should be shifted up a bit
-                        if do_hide:
-                            loc_y += 40
-                        else:
-                            loc_y += 80
+        for nodes_list in [selected_mix, selected_shader, selected_geometry, selected_math, selected_vector, selected_z, selected_alphaover]:
+            if not nodes_list:
+                continue
+            count_before = len(nodes)
+            # sort list by loc_x - reversed
+            nodes_list.sort(key=lambda k: k[1], reverse=True)
+            # get maximum loc_x
+            loc_x = nodes_list[0][1] + nodes_list[0][3] + 70
+            nodes_list.sort(key=lambda k: k[2], reverse=True)
+            
+            # Change the node type for math nodes in a geometry node tree.
+            if tree_type == 'GEOMETRY':
+                if nodes_list is selected_math or nodes_list is selected_vector:
+                    node_type = 'ShaderNode'
+                    if mode == 'MIX':
+                        mode = 'ADD'
                 else:
-                    loc_y = nodes_list[len(nodes_list) - 1][2]
-                offset_y = 100
-                if not do_hide:
-                    offset_y = 200
-                if nodes_list == selected_shader and not do_hide_shader:
-                    offset_y = 150.0
-                the_range = len(nodes_list) - 1
-                if len(nodes_list) == 1:
-                    the_range = 1
-                for i in range(the_range):
-                    if nodes_list == selected_mix:
-                        add = None
-                        if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
-                            if mode == 'ADD':
-                                add_type = node_type + 'OctAddTex'
-                                first = 0
-                                second = 1
-                            elif mode == 'MIX':
-                                add_type = node_type + 'OctMixTex'
-                                first = 1
-                                second = 2
-                            elif mode == 'SUBTRACT':
-                                add_type = node_type + 'OctSubtractTex'
-                                first = 0
-                                second = 1
-                            elif mode == 'MULTIPLY':
-                                add_type = node_type + 'OctMultiplyTex'
-                                first = 0
-                                second = 1
-                            elif mode == 'DIVIDE':
-                                add_type = node_type + 'OctCosineMixTex'
-                                first = 1
-                                second = 2
-                            add = nodes.new(add_type)
-                        else:
-                            add_type = node_type + 'MixRGB'
-                            add = nodes.new(add_type)
-                            add.blend_type = mode
-                            first = 1
-                            second = 2
-                            if mode != 'MIX':
-                                add.inputs[0].default_value = 1.0
-                        add.show_preview = False
-                        add.hide = do_hide
-                        if do_hide:
-                            loc_y = loc_y - 50
-
-                        add.width_hidden = 100.0
-                    elif nodes_list == selected_math:
-                        add_type = node_type + 'Math'
+                    node_type = 'GeometryNode'
+            if merge_position == 'CENTER':
+                loc_y = ((nodes_list[len(nodes_list) - 1][2]) + (nodes_list[len(nodes_list) - 2][2])) / 2  # average yloc of last two nodes (lowest two)
+                if nodes_list[len(nodes_list) - 1][-1] == True:  # if last node is hidden, mix should be shifted up a bit
+                    if do_hide:
+                        loc_y += 40
+                    else:
+                        loc_y += 80
+            else:
+                loc_y = nodes_list[len(nodes_list) - 1][2]
+            offset_y = 100
+            if not do_hide:
+                offset_y = 200
+            if nodes_list == selected_shader and not do_hide_shader:
+                offset_y = 150.0
+            the_range = len(nodes_list) - 1
+            if len(nodes_list) == 1:
+                the_range = 1
+            was_multi = False
+            for i in range(the_range):
+                if nodes_list == selected_mix:
+                    add_type = node_type + 'MixRGB'
+                    add = nodes.new(add_type)
+                    add.blend_type = mode
+                    if mode != 'MIX':
+                        add.inputs[0].default_value = 1.0
+                    add.show_preview = False
+                    add.hide = do_hide
+                    if do_hide:
+                        loc_y = loc_y - 50
+                    first = 1
+                    second = 2
+                    add.width_hidden = 100.0
+                elif nodes_list == selected_math:
+                    add_type = node_type + 'Math'
+                    add = nodes.new(add_type)
+                    add.operation = mode
+                    add.hide = do_hide
+                    if do_hide:
+                        loc_y = loc_y - 50
+                    first = 0
+                    second = 1
+                    add.width_hidden = 100.0
+                elif nodes_list == selected_shader:
+                    if mode == 'MIX':
+                        add_type = node_type + 'MixShader'
                         add = nodes.new(add_type)
-                        add.operation = mode
-                        add.hide = do_hide
-                        if do_hide:
-                            loc_y = loc_y - 50
-                        first = 0
-                        second = 1
-                        add.width_hidden = 100.0
-                    elif nodes_list == selected_shader:
-                        if mode == 'MIX':
-                            if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
-                                add_type = node_type + 'OctMixMat'
-                            else:
-                                add_type = node_type + 'MixShader'
-                            add = nodes.new(add_type)
-                            add.hide = do_hide_shader
-                            if do_hide_shader:
-                                loc_y = loc_y - 50
-                            first = 1
-                            second = 2
-                            add.width_hidden = 100.0
-                        elif mode == 'ADD':
-                            if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
-                                add_type = node_type + 'OctLayeredMat'
-                            else:
-                                add_type = node_type + 'AddShader'
-                            add = nodes.new(add_type)
-                            add.hide = do_hide_shader
-                            if do_hide_shader:
-                                loc_y = loc_y - 50
-                            first = 0
-                            second = 1
-                            add.width_hidden = 100.0
-                    elif nodes_list == selected_z:
-                        add = nodes.new('CompositorNodeZcombine')
-                        add.show_preview = False
-                        add.hide = do_hide
-                        if do_hide:
-                            loc_y = loc_y - 50
-                        first = 0
-                        second = 2
-                        add.width_hidden = 100.0
-                    elif nodes_list == selected_alphaover:
-                        add = nodes.new('CompositorNodeAlphaOver')
-                        add.show_preview = False
-                        add.hide = do_hide
-                        if do_hide:
+                        add.hide = do_hide_shader
+                        if do_hide_shader:
                             loc_y = loc_y - 50
                         first = 1
                         second = 2
                         add.width_hidden = 100.0
-                    add.location = loc_x, loc_y
-                    loc_y += offset_y
-                    add.select = True
-                count_adds = i + 1
-                count_after = len(nodes)
-                index = count_after - 1
-                first_selected = nodes[nodes_list[0][0]]
-                # "last" node has been added as first, so its index is count_before.
-                last_add = nodes[count_before]
-                # Special case:
-                # Two nodes were selected and first selected has no output links, second selected has output links.
-                # Then add links from last add to all links 'to_socket' of out links of second selected.
-                if len(nodes_list) == 2:
-                    if not first_selected.outputs[0].links:
-                        second_selected = nodes[nodes_list[1][0]]
-                        for ss_link in second_selected.outputs[0].links:
-                            # Prevent cyclic dependencies when nodes to be marged are linked to one another.
-                            # Create list of invalid indexes.
-                            invalid_i = [n[0] for n in (selected_mix + selected_math + selected_shader + selected_z)]
-                            # Link only if "to_node" index not in invalid indexes list.
-                            if ss_link.to_node not in [nodes[i] for i in invalid_i]:
-                                links.new(last_add.outputs[0], ss_link.to_socket)
-                # add links from last_add to all links 'to_socket' of out links of first selected.
-                for fs_link in first_selected.outputs[0].links:
-                    # Prevent cyclic dependencies when nodes to be marged are linked to one another.
-                    # Create list of invalid indexes.
-                    invalid_i = [n[0] for n in (selected_mix + selected_math + selected_shader + selected_z)]
-                    # Link only if "to_node" index not in invalid indexes list.
-                    if fs_link.to_node not in [nodes[i] for i in invalid_i]:
-                        links.new(last_add.outputs[0], fs_link.to_socket)
-                # add link from "first" selected and "first" add node
-                node_to = nodes[count_after - 1]
-                links.new(first_selected.outputs[0], node_to.inputs[first])
-                if node_to.type == 'ZCOMBINE':
-                    for fs_out in first_selected.outputs:
-                        if fs_out != first_selected.outputs[0] and fs_out.name in ('Z', 'Depth'):
-                            links.new(fs_out, node_to.inputs[1])
-                            break
-                # add links between added ADD nodes and between selected and ADD nodes
-                for i in range(count_adds):
-                    if i < count_adds - 1:
-                        node_from = nodes[index]
-                        node_to = nodes[index - 1]
-                        node_to_input_i = first
-                        node_to_z_i = 1  # if z combine - link z to first z input
-                        links.new(node_from.outputs[0], node_to.inputs[node_to_input_i])
-                        if node_to.type == 'ZCOMBINE':
-                            for from_out in node_from.outputs:
-                                if from_out != node_from.outputs[0] and from_out.name in ('Z', 'Depth'):
-                                    links.new(from_out, node_to.inputs[node_to_z_i])
-                    if len(nodes_list) > 1:
-                        node_from = nodes[nodes_list[i + 1][0]]
-                        node_to = nodes[index]
-                        node_to_input_i = second
-                        node_to_z_i = 3  # if z combine - link z to second z input
-                        links.new(node_from.outputs[0], node_to.inputs[node_to_input_i])
-                        if node_to.type == 'ZCOMBINE':
-                            for from_out in node_from.outputs:
-                                if from_out != node_from.outputs[0] and from_out.name in ('Z', 'Depth'):
-                                    links.new(from_out, node_to.inputs[node_to_z_i])
-                    index -= 1
-                # set "last" of added nodes as active
-                nodes.active = last_add
-                for i, x, y, dx, h in nodes_list:
-                    nodes[i].select = False
+                    elif mode == 'ADD':
+                        add_type = node_type + 'AddShader'
+                        add = nodes.new(add_type)
+                        add.hide = do_hide_shader
+                        if do_hide_shader:
+                            loc_y = loc_y - 50
+                        first = 0
+                        second = 1
+                        add.width_hidden = 100.0
+                elif nodes_list == selected_geometry:
+                    if mode in ('JOIN', 'MIX'):
+                        add_type = node_type + 'JoinGeometry'
+                        add = self.merge_with_multi_input(nodes_list, merge_position, do_hide, loc_x, links, nodes, add_type,[0])
+                    else:
+                        add_type = node_type + 'Boolean'
+                        indices = [0,1] if mode == 'DIFFERENCE' else [1]
+                        add = self.merge_with_multi_input(nodes_list, merge_position, do_hide, loc_x, links, nodes, add_type,indices)
+                        add.operation = mode
+                    was_multi = True
+                    break
+                elif nodes_list == selected_vector:
+                    add_type = node_type + 'VectorMath'
+                    add = nodes.new(add_type)
+                    add.operation = mode
+                    add.hide = do_hide
+                    if do_hide:
+                        loc_y = loc_y - 50
+                    first = 0
+                    second = 1
+                    add.width_hidden = 100.0
+                elif nodes_list == selected_z:
+                    add = nodes.new('CompositorNodeZcombine')
+                    add.show_preview = False
+                    add.hide = do_hide
+                    if do_hide:
+                        loc_y = loc_y - 50
+                    first = 0
+                    second = 2
+                    add.width_hidden = 100.0
+                elif nodes_list == selected_alphaover:
+                    add = nodes.new('CompositorNodeAlphaOver')
+                    add.show_preview = False
+                    add.hide = do_hide
+                    if do_hide:
+                        loc_y = loc_y - 50
+                    first = 1
+                    second = 2
+                    add.width_hidden = 100.0
+                add.location = loc_x, loc_y
+                loc_y += offset_y
+                add.select = True
+            
+            # This has already been handled separately
+            if was_multi:
+                continue
+            count_adds = i + 1
+            count_after = len(nodes)
+            index = count_after - 1
+            first_selected = nodes[nodes_list[0][0]]
+            # "last" node has been added as first, so its index is count_before.
+            last_add = nodes[count_before]
+            # Create list of invalid indexes.
+            invalid_nodes = [nodes[n[0]] for n in (selected_mix + selected_math + selected_shader + selected_z + selected_geometry)]
+            
+            # Special case:
+            # Two nodes were selected and first selected has no output links, second selected has output links.
+            # Then add links from last add to all links 'to_socket' of out links of second selected.
+            if len(nodes_list) == 2:
+                if not first_selected.outputs[0].links:
+                    second_selected = nodes[nodes_list[1][0]]
+                    for ss_link in second_selected.outputs[0].links:
+                        # Prevent cyclic dependencies when nodes to be merged are linked to one another.
+                        # Link only if "to_node" index not in invalid indexes list.
+                        if not self.link_creates_cycle(ss_link, invalid_nodes):
+                            links.new(last_add.outputs[0], ss_link.to_socket)
+            # add links from last_add to all links 'to_socket' of out links of first selected.
+            for fs_link in first_selected.outputs[0].links:
+                # Link only if "to_node" index not in invalid indexes list.
+                if not self.link_creates_cycle(fs_link, invalid_nodes):
+                    links.new(last_add.outputs[0], fs_link.to_socket)
+            # add link from "first" selected and "first" add node
+            node_to = nodes[count_after - 1]
+            links.new(first_selected.outputs[0], node_to.inputs[first])
+            if node_to.type == 'ZCOMBINE':
+                for fs_out in first_selected.outputs:
+                    if fs_out != first_selected.outputs[0] and fs_out.name in ('Z', 'Depth'):
+                        links.new(fs_out, node_to.inputs[1])
+                        break
+            # add links between added ADD nodes and between selected and ADD nodes
+            for i in range(count_adds):
+                if i < count_adds - 1:
+                    node_from = nodes[index]
+                    node_to = nodes[index - 1]
+                    node_to_input_i = first
+                    node_to_z_i = 1  # if z combine - link z to first z input
+                    links.new(node_from.outputs[0], node_to.inputs[node_to_input_i])
+                    if node_to.type == 'ZCOMBINE':
+                        for from_out in node_from.outputs:
+                            if from_out != node_from.outputs[0] and from_out.name in ('Z', 'Depth'):
+                                links.new(from_out, node_to.inputs[node_to_z_i])
+                if len(nodes_list) > 1:
+                    node_from = nodes[nodes_list[i + 1][0]]
+                    node_to = nodes[index]
+                    node_to_input_i = second
+                    node_to_z_i = 3  # if z combine - link z to second z input
+                    links.new(node_from.outputs[0], node_to.inputs[node_to_input_i])
+                    if node_to.type == 'ZCOMBINE':
+                        for from_out in node_from.outputs:
+                            if from_out != node_from.outputs[0] and from_out.name in ('Z', 'Depth'):
+                                links.new(from_out, node_to.inputs[node_to_z_i])
+                index -= 1
+            # set "last" of added nodes as active
+            nodes.active = last_add
+            for i, x, y, dx, h in nodes_list:
+                nodes[i].select = False
 
         return {'FINISHED'}
 
@@ -2545,12 +2788,10 @@ class NWBatchChangeNodes(Operator, NWBase):
     )
 
     def execute(self, context):
-
-        nodes, links = get_nodes_links(context)
         blend_type = self.blend_type
         operation = self.operation
         for node in context.selected_nodes:
-            if node.type == 'MIX_RGB':
+            if node.type == 'MIX_RGB' or node.bl_idname == 'GeometryNodeAttributeMix':
                 if not blend_type in [nav[0] for nav in navs]:
                     node.blend_type = blend_type
                 else:
@@ -2569,7 +2810,7 @@ class NWBatchChangeNodes(Operator, NWBase):
                         else:
                             node.blend_type = blend_types[index - 1][0]
 
-            if node.type == 'MATH':
+            if node.type == 'MATH' or node.bl_idname == 'GeometryNodeAttributeMath':
                 if not operation in [nav[0] for nav in navs]:
                     node.operation = operation
                 else:
@@ -2609,7 +2850,7 @@ class NWChangeMixFactor(Operator, NWBase):
         selected = []  # entry = index
         for si, node in enumerate(nodes):
             if node.select:
-                if node.type in {'MIX_RGB', 'MIX_SHADER', 'OCT_MIX_TEX', 'OCT_MIX_MAT', 'OCT_COSMIX_TEX'}:
+                if node.type in {'MIX_RGB', 'MIX_SHADER'}:
                     selected.append(si)
 
         for si in selected:
@@ -2850,89 +3091,7 @@ class NWAddTextureSetup(Operator, NWBase):
                 valid = True
         return valid
 
-    def execute_octane(self, context):
-        nodes, links = get_nodes_links(context)
-        shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
-        texture_types = [x[1] for x in octane_textures_node_layout]
-        procedural_types = [x[1] for x in octane_textureprocedural_node_layout]
-        selected_nodes = [n for n in nodes if n.select]
-        for t_node in selected_nodes:
-            valid = False
-            input_index = 0
-            if t_node.inputs:
-                for index, i in enumerate(t_node.inputs):
-                    if not i.is_linked:
-                        valid = True
-                        input_index = index
-                        break
-            if valid:
-                locx = t_node.location.x
-                locy = t_node.location.y - t_node.dimensions.y/2
-                xoffset = [500, 700]
-                is_texture = False
-                is_proc = False
-                if t_node.bl_idname in texture_types + procedural_types:
-                    xoffset = [290, 500]
-                    is_texture = True
-                    if t_node.bl_idname in procedural_types:
-                        is_proc = True
-                coordout = 2
-                image_type = 'ShaderNodeOctImageTex'
-
-                if (t_node.type in texture_types and t_node.type != 'TEX_IMAGE') or (t_node.type == 'BACKGROUND'):
-                    coordout = 0  # image texture uses UVs, procedural textures and Background shader use Generated
-                    if t_node.type == 'BACKGROUND':
-                        image_type = 'ShaderNodeTexEnvironment'
-
-                if not is_texture:
-                    tex = nodes.new(image_type)
-                    tex.location = [locx - 200, locy + 112]
-                    nodes.active = tex
-                    links.new(tex.outputs[0], t_node.inputs[1])
-
-                t_node.select = False
-                if self.add_mapping or is_texture:
-                    if t_node.bl_idname != 'ShaderNodeOctUVWProjection':
-                        m = nodes.new('ShaderNodeOctFullTransform')
-                        m.location = [locx - xoffset[0], locy + 141]
-                        m.width = 240
-                    else:
-                        m = t_node
-                    coord = nodes.new('ShaderNodeOctUVWProjection')
-                    coord.location = [locx - (200 if t_node.type == 'MAPPING' else xoffset[1]), locy + 124]
-
-                    if not is_texture:
-                        links.new(m.outputs[0], tex.inputs[4])
-                        links.new(coord.outputs[0], tex.inputs[5])
-                    else:
-                        nodes.active = m
-                        if is_proc:
-                            if 'Transform' in t_node.inputs:
-                                links.new(m.outputs[0], t_node.inputs['Transform'])
-                            else:
-                                # delete node
-                                t_node.select = False
-                                # only node is selected now
-                                bpy.ops.node.delete()
-
-                            if 'Projection' in t_node.inputs:
-                                links.new(coord.outputs[0], t_node.inputs['Projection'])
-                            else:
-                                # delete node
-                                t_node.select = False
-                                # only node is selected now
-                                bpy.ops.node.delete()
-                        else:
-                            links.new(m.outputs[0], t_node.inputs[4])
-                            links.new(coord.outputs[0], t_node.inputs[5])
-            else:
-                self.report({'WARNING'}, "No free inputs for node: "+t_node.name)
-        return {'FINISHED'}
-
     def execute(self, context):
-        if context.scene.render.engine == 'octane':
-            return self.execute_octane(context)
-
         nodes, links = get_nodes_links(context)
         shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
         texture_types = [x[1] for x in shaders_texture_nodes_props]
@@ -3036,252 +3195,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 valid = True
         return valid
 
-
-    ###
-    ### For octane's shaders
-    ###
-
-    def execute_octane(self, context):
-        # Check if everything is ok
-        if not self.directory:
-            self.report({'INFO'}, 'No Folder Selected')
-            return {'CANCELLED'}
-        if not self.files[:]:
-            self.report({'INFO'}, 'No Files Selected')
-            return {'CANCELLED'}
-
-        nodes, links = get_nodes_links(context)
-        active_node = nodes.active
-
-        # Octane shader's names
-        # ShaderNodeOctUniversalMat
-        # ShaderNodeOctMetalMat
-        # ShaderNodeOctToonMat
-        # ShaderNodeOctSpecularMat
-        # ShaderNodeOctDiffuseMat
-        # ShaderNodeOctGlossyMat
-        # ShaderNodeOctHairMat
-
-        if not (active_node and active_node.bl_idname in ['ShaderNodeOctUniversalMat', 
-                                                          'ShaderNodeOctMetalMat',
-                                                          'ShaderNodeOctToonMat',
-                                                          'ShaderNodeOctSpecularMat',
-                                                          'ShaderNodeOctDiffuseMat',
-                                                          'ShaderNodeOctGlossyMat',
-                                                          'ShaderNodeOctHairMat']):
-            self.report({'INFO'}, 'Select Shader Node')
-            return {'CANCELLED'}
-
-        # Helper_functions
-        def split_into__components(fname):
-            # Split filename into components
-            # 'WallTexture_diff_2k.002.jpg' -> ['Wall', 'Texture', 'diff', 'k']
-            # Remove extension
-            fname = path.splitext(fname)[0]
-            # Remove digits
-            fname = ''.join(i for i in fname if not i.isdigit())
-            # Separate CamelCase by space
-            fname = re.sub("([a-z])([A-Z])","\g<1> \g<2>",fname)
-            # Replace common separators with SPACE
-            seperators = ['_', '.', '-', '__', '--', '#']
-            for sep in seperators:
-                fname = fname.replace(sep, ' ')
-
-            components = fname.split(' ')
-            components = [c.lower() for c in components]
-            return components
-
-        # Filter textures names for texturetypes in filenames
-        # [Socket Name, [abbreviations and keyword list], Filename placeholder]
-        tags = context.preferences.addons[__name__].preferences.principled_tags
-        normal_abbr = tags.normal.split(' ')
-        bump_abbr = tags.bump.split(' ')
-        gloss_abbr = tags.gloss.split(' ')
-        rough_abbr = tags.rough.split(' ')
-        socketnames = [
-        ['Displacement', tags.displacement.split(' '), None],
-        ['Albedo color', tags.base_color.split(' '), None],
-        ['Albedo', tags.base_color.split(' '), None],
-        ['Diffuse', tags.base_color.split(' '), None],
-        ['Medium', tags.sss_color.split(' '), None],
-        ['Metallic', tags.metallic.split(' '), None],
-        ['Specular', tags.specular.split(' '), None],
-        ['Roughness', rough_abbr + gloss_abbr, None],
-        ['Bump', bump_abbr, None],
-        ['Normal', normal_abbr, None],
-        ]
-
-        # Look through texture_types and set value as filename of first matched file
-        def match_files_to_socket_names():
-            for sname in socketnames:
-                for file in self.files:
-                    fname = file.name
-                    filenamecomponents = split_into__components(fname)
-                    matches = set(sname[1]).intersection(set(filenamecomponents))
-                    # TODO: ignore basename (if texture is named "fancy_metal_nor", it will be detected as metallic map, not normal map)
-                    if matches:
-                        sname[2] = fname
-                        break
-
-        match_files_to_socket_names()
-        # Remove socketnames without found files
-        socketnames = [s for s in socketnames if s[2]
-                       and path.exists(self.directory+s[2])]
-        if not socketnames:
-            self.report({'INFO'}, 'No matching images found')
-            print('No matching images found')
-            return {'CANCELLED'}
-
-        # Don't override path earlier as os.path is used to check the absolute path
-        import_path = self.directory
-        if self.relative_path:
-            if bpy.data.filepath:
-                import_path = bpy.path.relpath(self.directory)
-            else:
-                self.report({'WARNING'}, 'Relative paths cannot be used with unsaved scenes!')
-                print('Relative paths cannot be used with unsaved scenes!')
-
-        # Add found images
-        print('\nMatched Textures:')
-        texture_nodes = []
-        texture_node = None
-        disp_texture = None
-        normal_node = None
-        roughness_node = None
-        for i, sname in enumerate(socketnames):
-            if not sname[0] in active_node.inputs:
-                continue
-
-            # DISPLACEMENT NODES
-            if sname[0] == 'Displacement':
-                disp_texture = nodes.new(type='ShaderNodeOctFloatImageTex')
-                img = bpy.data.images.load(path.join(import_path, sname[2]))
-                disp_texture.image = img
-                disp_texture.label = 'Displacement'
-                #if disp_texture.image:
-                #    disp_texture.image.colorspace_settings.is_data = True
-
-                # Add displacement offset nodes
-                settings = context.preferences.addons[__name__].preferences
-                disp_node = nodes.new(type=settings.texture_setup_displacement)
-                disp_node.location = active_node.location + Vector((-200, -1110))
-                link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
-
-                # TODO Turn on true displacement in the material
-                # Too complicated for now
-
-                # Find output node
-                output_node = [n for n in nodes if n.bl_idname == 'ShaderNodeOutputMaterial']
-                if output_node:
-                    if not output_node[0].inputs[2].is_linked:
-                        link = links.new(active_node.inputs[sname[0]], disp_node.outputs[0])
-
-                continue
-
-            if not active_node.inputs[sname[0]].is_linked:
-                # No texture node connected -> add texture node with new image
-                texture_node = None
-
-                if sname[0] in ['Metallic', 'Roughness', 'Specular']:
-                    texture_node = nodes.new(type='ShaderNodeOctFloatImageTex')
-                else:
-                    texture_node = nodes.new(type='ShaderNodeOctImageTex')
-                img = bpy.data.images.load(path.join(import_path, sname[2]))
-                texture_node.image = img
-
-                # NORMAL NODES
-                if sname[0] == 'Normal':
-                    link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
-                    normal_node_texture = texture_node
-
-                elif sname[0] == 'Roughness':
-                    # Test if glossy or roughness map
-                    fname_components = split_into__components(sname[2])
-                    match_rough = set(rough_abbr).intersection(set(fname_components))
-                    match_gloss = set(gloss_abbr).intersection(set(fname_components))
-
-                    if match_rough:
-                        # If Roughness nothing to to
-                        link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
-
-                    elif match_gloss:
-                        # If Gloss Map add invert node
-                        invert_node = nodes.new(type='ShaderNodeOctInvertTex')
-                        link = links.new(invert_node.inputs[0], texture_node.outputs[0])
-
-                        link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
-                        roughness_node = texture_node
-
-                else:
-                    # This is a simple connection Texture --> Input slot
-                    link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
-
-                # Use non-color for all but 'Albedo color' Textures
-                #if not sname[0] in ['Albedo color'] and texture_node.image:
-                    #texture_node.image.colorspace_settings.is_data = True
-
-            else:
-                # If already texture connected. add to node list for alignment
-                texture_node = active_node.inputs[sname[0]].links[0].from_node
-
-            if texture_node is not None:
-                # This are all connected texture nodes
-                texture_nodes.append(texture_node)
-                texture_node.label = sname[0]
-
-        if disp_texture:
-            texture_nodes.append(disp_texture)
-
-        # Alignment
-        for i, texture_node in enumerate(texture_nodes):
-            offset = Vector((-580, (i * -320) + 250))
-            texture_node.location = active_node.location + offset
-
-        if normal_node:
-            # Extra alignment if normal node was added
-            normal_node.location = normal_node_texture.location + Vector((300, 0))
-
-        if roughness_node:
-            # Alignment of invert node if glossy map
-            invert_node.location = roughness_node.location + Vector((300, 0))
-
-        # Add texture input + mapping
-        mapping = nodes.new(type='ShaderNodeOctFullTransform')
-        mapping.location = active_node.location + Vector((-1150, 0))
-        if len(texture_nodes) > 1:
-            # If more than one texture add reroute node in between
-            reroute = nodes.new(type='NodeReroute')
-            tex_coords = Vector((texture_nodes[0].location.x, sum(n.location.y for n in texture_nodes)/len(texture_nodes)))
-            reroute.location = tex_coords + Vector((-50, -120))
-            for texture_node in texture_nodes:
-                link = links.new(texture_node.inputs[4], reroute.outputs[0])
-            link = links.new(reroute.inputs[0], mapping.outputs[0])
-
-            texture_nodes.append(reroute)
-        else:
-            link = links.new(texture_nodes[0].inputs[0], mapping.outputs[0])
-
-        # Connect texture_coordiantes to mapping node
-        #texture_input = nodes.new(type='ShaderNodeOctFullTransform')
-        #texture_input.location = mapping.location + Vector((-200, 0))
-        #link = links.new(mapping.inputs[0], texture_input.outputs[2])
-
-        # Just to be sure
-        active_node.select = False
-        nodes.update()
-        links.update()
-        force_update(context)
-        return {'FINISHED'}
-    
-    ###
-    ### For blender's clasic shaders
-    ###
-
     def execute(self, context):
-        # execute octane's code if renderer selected
-        if context.scene.render.engine == 'octane':
-            return self.execute_octane(context)
-
         # Check if everything is ok
         if not self.directory:
             self.report({'INFO'}, 'No Folder Selected')
@@ -3369,6 +3283,8 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         normal_node = None
         roughness_node = None
         for i, sname in enumerate(socketnames):
+            print(i, sname[0], sname[2])
+
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
                 disp_texture = nodes.new(type='ShaderNodeTexImage')
@@ -3814,7 +3730,7 @@ class NWDetachOutputs(Operator, NWBase):
         return {'FINISHED'}
 
 
-class NWLinkToOutputNode(Operator, NWBase):
+class NWLinkToOutputNode(Operator):
     """Link to Composite node or Material Output node"""
     bl_idname = "node.nw_link_out"
     bl_label = "Connect to Output"
@@ -3823,7 +3739,7 @@ class NWLinkToOutputNode(Operator, NWBase):
     @classmethod
     def poll(cls, context):
         valid = False
-        if nw_check(context):
+        if nw_check(context) and context.space_data.tree_type != 'GeometryNodeTree':
             if context.active_node is not None:
                 for out in context.active_node.outputs:
                     if is_visible_socket(out):
@@ -4329,7 +4245,8 @@ def drawlayout(context, layout, mode='non-panel'):
 
     col = layout.column(align=True)
     col.menu(NWLinkActiveToSelectedMenu.bl_idname, text="Link Active To Selected", icon='LINKED')
-    col.operator(NWLinkToOutputNode.bl_idname, icon='DRIVER')
+    if tree_type != 'GeometryNodeTree':
+        col.operator(NWLinkToOutputNode.bl_idname, icon='DRIVER')
     col.separator()
 
     col = layout.column(align=True)
@@ -4348,7 +4265,8 @@ def drawlayout(context, layout, mode='non-panel'):
     col = layout.column(align=True)
     if tree_type == 'CompositorNodeTree':
         col.operator(NWResetBG.bl_idname, icon='ZOOM_PREVIOUS')
-    col.operator(NWReloadImages.bl_idname, icon='FILE_REFRESH')
+    if tree_type != 'GeometryNodeTree':
+        col.operator(NWReloadImages.bl_idname, icon='FILE_REFRESH')
     col.separator()
 
     col = layout.column(align=True)
@@ -4403,15 +4321,29 @@ class NWMergeNodesMenu(Menu, NWBase):
         layout = self.layout
         if type == 'ShaderNodeTree':
             layout.menu(NWMergeShadersMenu.bl_idname, text="Use Shaders")
-        layout.menu(NWMergeMixMenu.bl_idname, text="Use Mix Nodes")
-        layout.menu(NWMergeMathMenu.bl_idname, text="Use Math Nodes")
-        props = layout.operator(NWMergeNodes.bl_idname, text="Use Z-Combine Nodes")
-        props.mode = 'MIX'
-        props.merge_type = 'ZCOMBINE'
-        props = layout.operator(NWMergeNodes.bl_idname, text="Use Alpha Over Nodes")
-        props.mode = 'MIX'
-        props.merge_type = 'ALPHAOVER'
+        if type == 'GeometryNodeTree':
+            layout.menu(NWMergeGeometryMenu.bl_idname, text="Use Geometry Nodes")
+            layout.menu(NWMergeMathMenu.bl_idname, text="Use Math Nodes")
+        else:
+            layout.menu(NWMergeMixMenu.bl_idname, text="Use Mix Nodes")
+            layout.menu(NWMergeMathMenu.bl_idname, text="Use Math Nodes")
+            props = layout.operator(NWMergeNodes.bl_idname, text="Use Z-Combine Nodes")
+            props.mode = 'MIX'
+            props.merge_type = 'ZCOMBINE'
+            props = layout.operator(NWMergeNodes.bl_idname, text="Use Alpha Over Nodes")
+            props.mode = 'MIX'
+            props.merge_type = 'ALPHAOVER'
 
+class NWMergeGeometryMenu(Menu, NWBase):
+    bl_idname = "NODE_MT_nw_merge_geometry_menu"
+    bl_label = "Merge Selected Nodes using Geometry Nodes"
+    def draw(self, context):
+        layout = self.layout
+        # The boolean node + Join Geometry node
+        for type, name, description in geo_combine_operations:
+            props = layout.operator(NWMergeNodes.bl_idname, text=name)
+            props.mode = type
+            props.merge_type = 'GEOMETRY'
 
 class NWMergeShadersMenu(Menu, NWBase):
     bl_idname = "NODE_MT_nw_merge_shaders_menu"
@@ -4446,18 +4378,12 @@ class NWConnectionListOutputs(Menu, NWBase):
         nodes, links = get_nodes_links(context)
 
         n1 = nodes[context.scene.NWLazySource]
-
-        if n1.type == "R_LAYERS":
-            index=0
-            for o in n1.outputs:
-                if o.enabled:  # Check which passes the render layer has enabled
-                    layout.operator(NWCallInputsMenu.bl_idname, text=o.name, icon="RADIOBUT_OFF").from_socket=index
-                index+=1
-        else:
-            index=0
-            for o in n1.outputs:
+        index=0
+        for o in n1.outputs:
+            # Only show sockets that are exposed. 
+            if o.enabled:
                 layout.operator(NWCallInputsMenu.bl_idname, text=o.name, icon="RADIOBUT_OFF").from_socket=index
-                index+=1
+            index+=1
 
 
 class NWConnectionListInputs(Menu, NWBase):
@@ -4472,10 +4398,15 @@ class NWConnectionListInputs(Menu, NWBase):
 
         index = 0
         for i in n2.inputs:
-            op = layout.operator(NWMakeLink.bl_idname, text=i.name, icon="FORWARD")
-            op.from_socket = context.scene.NWSourceSocket
-            op.to_socket = index
-            index+=1
+            # Only show sockets that are exposed.
+            # This prevents, for example, the scale value socket
+            # of the vector math node being added to the list when
+            # the mode is not 'SCALE'. 
+            if i.enabled:
+                op = layout.operator(NWMakeLink.bl_idname, text=i.name, icon="FORWARD")
+                op.from_socket = context.scene.NWSourceSocket
+                op.to_socket = index
+                index+=1
 
 
 class NWMergeMathMenu(Menu, NWBase):
@@ -4668,20 +4599,6 @@ class NWSwitchNodeTypeMenu(Menu, NWBase):
             layout.menu(NWSwitchShadersVectorSubmenu.bl_idname)
             layout.menu(NWSwitchShadersConverterSubmenu.bl_idname)
             layout.menu(NWSwitchShadersLayoutSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneShaderSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneLayersSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneProceduralSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneTextureSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneToolSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneEmissionSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneMediumSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneTransformSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneProjectionSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneValueSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneCameraSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneVectronSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneRoundEdgesSubmenu.bl_idname)
-            layout.menu(NWSwitchShadersOctaneEnviromentSubmenu.bl_idname)
         if tree.type == 'COMPOSITING':
             layout.menu(NWSwitchCompoInputSubmenu.bl_idname)
             layout.menu(NWSwitchCompoOutputSubmenu.bl_idname)
@@ -4701,6 +4618,17 @@ class NWSwitchNodeTypeMenu(Menu, NWBase):
             layout.menu(NWSwitchTexConverterSubmenu.bl_idname)
             layout.menu(NWSwitchTexDistortSubmenu.bl_idname)
             layout.menu(NWSwitchTexLayoutSubmenu.bl_idname)
+        if tree.type == 'GEOMETRY':
+            categories = [c for c in node_categories_iter(context)
+                      if c.name not in ['Group', 'Script']]
+            for cat in categories:
+                idname = f"NODE_MT_nw_switch_{cat.identifier}_submenu"
+                if hasattr(bpy.types, idname):
+                    layout.menu(idname)
+                else:
+                    layout.label(text="Unable to load altered node lists.")
+                    layout.label(text="Please re-enable Node Wrangler.")
+                    break
 
 
 class NWSwitchShadersInputSubmenu(Menu, NWBase):
@@ -4712,147 +4640,6 @@ class NWSwitchShadersInputSubmenu(Menu, NWBase):
         for ident, node_type, rna_name in shaders_input_nodes_props:
             props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
             props.to_type = ident
-
-class NWSwitchShadersOctaneShaderSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_shader_submenu"
-    bl_label = "Octane Shader"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_shader_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneLayersSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_layers_submenu"
-    bl_label = "Octane Layers"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_layers_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneProceduralSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_procedural_submenu"
-    bl_label = "Octane Procedural"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_textureprocedural_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneTextureSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_texture_submenu"
-    bl_label = "Octane Texture"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_textures_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneToolSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_tool_submenu"
-    bl_label = "Octane Tool"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_texturetools_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneEmissionSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_emission_submenu"
-    bl_label = "Octane Emission"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_emission_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneMediumSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_medium_submenu"
-    bl_label = "Octane Medium"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_mediums_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneTransformSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_transform_submenu"
-    bl_label = "Octane Transform"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_transfroms_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneProjectionSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_projection_submenu"
-    bl_label = "Octane Projection"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_projections_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneValueSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_value_submenu"
-    bl_label = "Octane Value"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_values_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneCameraSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_camera_submenu"
-    bl_label = "Octane Camera"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_cameras_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneVectronSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_vectron_submenu"
-    bl_label = "Octane Vectron"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_vectrons_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneRoundEdgesSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_roundedges_submenu"
-    bl_label = "Octane Round Edges"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_roundedges_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
-class NWSwitchShadersOctaneEnviromentSubmenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_shaders_octane_enviroment_submenu"
-    bl_label = "Octane Enviroment"
-
-    def draw(self, context):
-        layout = self.layout
-        for ident, node_type, rna_name in octane_enviroment_node_layout:
-            props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
-            props.to_type = ident
-
 
 
 class NWSwitchShadersOutputSubmenu(Menu, NWBase):
@@ -5188,6 +4975,17 @@ class NWSwitchTexLayoutSubmenu(Menu, NWBase):
                 props = layout.operator(NWSwitchNodeType.bl_idname, text=rna_name)
                 props.to_type = ident
 
+def draw_switch_category_submenu(self, context):
+    layout = self.layout
+    if self.category.name == 'Layout':
+        for node in self.category.items(context):
+            if node.nodetype != 'NodeFrame':
+                props = layout.operator(NWSwitchNodeType.bl_idname, text=node.label)
+                props.to_type = node.nodetype
+    else:
+        for node in self.category.items(context):
+            props = layout.operator(NWSwitchNodeType.bl_idname, text=node.label)
+            props.geo_to_type = node.nodetype
 
 #
 #  APPENDAGES TO EXISTING UI
@@ -5245,7 +5043,7 @@ def reset_nodes_button(self, context):
 #
 #  REGISTER/UNREGISTER CLASSES AND KEYMAP ITEMS
 #
-
+switch_category_menus = []
 addon_keymaps = []
 # kmi_defs entry: (identifier, key, action, CTRL, SHIFT, ALT, props, nice name)
 # props entry: (property name, property value)
@@ -5407,8 +5205,8 @@ kmi_defs = (
     (NWFrameSelected.bl_idname, 'P', 'PRESS', False, True, False, None, "Frame selected nodes"),
     # Swap Outputs
     (NWSwapLinks.bl_idname, 'S', 'PRESS', False, False, True, None, "Swap Outputs"),
-    # Emission Viewer
-    (NWEmissionViewer.bl_idname, 'LEFTMOUSE', 'PRESS', True, True, False, None, "Connect to Cycles Viewer node"),
+    # Preview Node
+    (NWPreviewNode.bl_idname, 'LEFTMOUSE', 'PRESS', True, True, False, None, "Preview node output"),
     # Reload Images
     (NWReloadImages.bl_idname, 'R', 'PRESS', False, False, True, None, "Reload images"),
     # Lazy Mix
@@ -5442,7 +5240,7 @@ classes = (
     NWSwapLinks,
     NWResetBG,
     NWAddAttrNode,
-    NWEmissionViewer,
+    NWPreviewNode,
     NWFrameSelected,
     NWReloadImages,
     NWSwitchNodeType,
@@ -5472,6 +5270,7 @@ classes = (
     NodeWranglerMenu,
     NWMergeNodesMenu,
     NWMergeShadersMenu,
+    NWMergeGeometryMenu,
     NWMergeMixMenu,
     NWConnectionListOutputs,
     NWConnectionListInputs,
@@ -5489,20 +5288,6 @@ classes = (
     NWVertColMenu,
     NWSwitchNodeTypeMenu,
     NWSwitchShadersInputSubmenu,
-    NWSwitchShadersOctaneShaderSubmenu,
-    NWSwitchShadersOctaneLayersSubmenu,
-    NWSwitchShadersOctaneProceduralSubmenu,
-    NWSwitchShadersOctaneTextureSubmenu,
-    NWSwitchShadersOctaneToolSubmenu,
-    NWSwitchShadersOctaneEmissionSubmenu,
-    NWSwitchShadersOctaneMediumSubmenu,
-    NWSwitchShadersOctaneTransformSubmenu,
-    NWSwitchShadersOctaneProjectionSubmenu,
-    NWSwitchShadersOctaneValueSubmenu,
-    NWSwitchShadersOctaneCameraSubmenu,
-    NWSwitchShadersOctaneVectronSubmenu,
-    NWSwitchShadersOctaneRoundEdgesSubmenu,
-    NWSwitchShadersOctaneEnviromentSubmenu,
     NWSwitchShadersOutputSubmenu,
     NWSwitchShadersShaderSubmenu,
     NWSwitchShadersTextureSubmenu,
@@ -5555,6 +5340,11 @@ def register():
         name="Source Socket!",
         default=0,
         description="An internal property used to store the source socket in a Lazy Connect operation")
+    bpy.types.NodeSocketInterface.NWViewerSocket = BoolProperty(
+        name="NW Socket",
+        default=False,
+        description="An internal property used to determine if a socket is generated by the addon"
+    )
 
     for cls in classes:
         register_class(cls)
@@ -5581,6 +5371,23 @@ def register():
     bpy.types.NODE_PT_active_node_generic.prepend(reset_nodes_button)
     bpy.types.NODE_MT_node.prepend(reset_nodes_button)
 
+    # switch submenus
+    switch_category_menus.clear()
+    for cat in node_categories_iter(None):
+        if cat.name not in ['Group', 'Script'] and cat.identifier.startswith('GEO'):
+            idname = f"NODE_MT_nw_switch_{cat.identifier}_submenu"
+            switch_category_type = type(idname, (bpy.types.Menu,), {
+                "bl_space_type": 'NODE_EDITOR',
+                "bl_label": cat.name,
+                "category": cat,
+                "poll": cat.poll,
+                "draw": draw_switch_category_submenu,
+            })
+
+            switch_category_menus.append(switch_category_type)
+
+            bpy.utils.register_class(switch_category_type)
+
 
 def unregister():
     from bpy.utils import unregister_class
@@ -5590,6 +5397,11 @@ def unregister():
     del bpy.types.Scene.NWLazySource
     del bpy.types.Scene.NWLazyTarget
     del bpy.types.Scene.NWSourceSocket
+    del bpy.types.NodeSocketInterface.NWViewerSocket
+
+    for cat_types in switch_category_menus:
+        bpy.utils.unregister_class(cat_types)
+    switch_category_menus.clear()
 
     # keymaps
     for km, kmi in addon_keymaps:
