@@ -43,7 +43,7 @@ from bpy.props import (
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-from nodeitems_utils import node_categories_iter
+from nodeitems_utils import node_categories_iter, NodeItemCustom
 from math import cos, sin, pi, hypot
 from os import path
 from glob import glob
@@ -617,60 +617,56 @@ def is_visible_socket(socket):
 
 def nice_hotkey_name(punc):
     # convert the ugly string name into the actual character
-    pairs = (
-        ('LEFTMOUSE', "LMB"),
-        ('MIDDLEMOUSE', "MMB"),
-        ('RIGHTMOUSE', "RMB"),
-        ('WHEELUPMOUSE', "Wheel Up"),
-        ('WHEELDOWNMOUSE', "Wheel Down"),
-        ('WHEELINMOUSE', "Wheel In"),
-        ('WHEELOUTMOUSE', "Wheel Out"),
-        ('ZERO', "0"),
-        ('ONE', "1"),
-        ('TWO', "2"),
-        ('THREE', "3"),
-        ('FOUR', "4"),
-        ('FIVE', "5"),
-        ('SIX', "6"),
-        ('SEVEN', "7"),
-        ('EIGHT', "8"),
-        ('NINE', "9"),
-        ('OSKEY', "Super"),
-        ('RET', "Enter"),
-        ('LINE_FEED', "Enter"),
-        ('SEMI_COLON', ";"),
-        ('PERIOD', "."),
-        ('COMMA', ","),
-        ('QUOTE', '"'),
-        ('MINUS', "-"),
-        ('SLASH', "/"),
-        ('BACK_SLASH', "\\"),
-        ('EQUAL', "="),
-        ('NUMPAD_1', "Numpad 1"),
-        ('NUMPAD_2', "Numpad 2"),
-        ('NUMPAD_3', "Numpad 3"),
-        ('NUMPAD_4', "Numpad 4"),
-        ('NUMPAD_5', "Numpad 5"),
-        ('NUMPAD_6', "Numpad 6"),
-        ('NUMPAD_7', "Numpad 7"),
-        ('NUMPAD_8', "Numpad 8"),
-        ('NUMPAD_9', "Numpad 9"),
-        ('NUMPAD_0', "Numpad 0"),
-        ('NUMPAD_PERIOD', "Numpad ."),
-        ('NUMPAD_SLASH', "Numpad /"),
-        ('NUMPAD_ASTERIX', "Numpad *"),
-        ('NUMPAD_MINUS', "Numpad -"),
-        ('NUMPAD_ENTER', "Numpad Enter"),
-        ('NUMPAD_PLUS', "Numpad +"),
-    )
-    nice_punc = False
-    for (ugly, nice) in pairs:
-        if punc == ugly:
-            nice_punc = nice
-            break
-    if not nice_punc:
-        nice_punc = punc.replace("_", " ").title()
-    return nice_punc
+    nice_name = {
+        'LEFTMOUSE': "LMB",
+        'MIDDLEMOUSE': "MMB",
+        'RIGHTMOUSE': "RMB",
+        'WHEELUPMOUSE': "Wheel Up",
+        'WHEELDOWNMOUSE': "Wheel Down",
+        'WHEELINMOUSE': "Wheel In",
+        'WHEELOUTMOUSE': "Wheel Out",
+        'ZERO': "0",
+        'ONE': "1",
+        'TWO': "2",
+        'THREE': "3",
+        'FOUR': "4",
+        'FIVE': "5",
+        'SIX': "6",
+        'SEVEN': "7",
+        'EIGHT': "8",
+        'NINE': "9",
+        'OSKEY': "Super",
+        'RET': "Enter",
+        'LINE_FEED': "Enter",
+        'SEMI_COLON': ";",
+        'PERIOD': ".",
+        'COMMA': ",",
+        'QUOTE': '"',
+        'MINUS': "-",
+        'SLASH': "/",
+        'BACK_SLASH': "\\",
+        'EQUAL': "=",
+        'NUMPAD_1': "Numpad 1",
+        'NUMPAD_2': "Numpad 2",
+        'NUMPAD_3': "Numpad 3",
+        'NUMPAD_4': "Numpad 4",
+        'NUMPAD_5': "Numpad 5",
+        'NUMPAD_6': "Numpad 6",
+        'NUMPAD_7': "Numpad 7",
+        'NUMPAD_8': "Numpad 8",
+        'NUMPAD_9': "Numpad 9",
+        'NUMPAD_0': "Numpad 0",
+        'NUMPAD_PERIOD': "Numpad .",
+        'NUMPAD_SLASH': "Numpad /",
+        'NUMPAD_ASTERIX': "Numpad *",
+        'NUMPAD_MINUS': "Numpad -",
+        'NUMPAD_ENTER': "Numpad Enter",
+        'NUMPAD_PLUS': "Numpad +",
+    }
+    try:
+        return nice_name[punc]
+    except KeyError:
+        return punc.replace("_", " ").title()
 
 
 def force_update(context):
@@ -738,14 +734,11 @@ def autolink(node1, node2, links):
 
 
 def node_at_pos(nodes, context, event):
-    nodes_near_mouse = []
     nodes_under_mouse = []
     target_node = None
 
     store_mouse_cursor(context, event)
     x, y = context.space_data.cursor_location
-    x = x
-    y = y
 
     # Make a list of each corner (and middle of border) for each node.
     # Will be sorted to find nearest point and thus nearest node
@@ -1710,6 +1703,11 @@ class NWPreviewNode(Operator, NWBase):
     bl_description = "Connect active node to Emission Shader for shadeless previews, or to the geometry node tree's output"
     bl_options = {'REGISTER', 'UNDO'}
 
+    # If false, the operator is not executed if the current node group happens to be a geometry nodes group.
+    # This is needed because geometry nodes has its own viewer node that uses the same shortcut as in the compositor.
+    # Geometry Nodes support can be removed here once the viewer node is supported in the viewport.
+    run_in_geometry_nodes: BoolProperty(default=True)
+
     def __init__(self):
         self.shader_output_type = ""
         self.shader_output_ident = ""
@@ -1864,6 +1862,10 @@ class NWPreviewNode(Operator, NWBase):
 
     def invoke(self, context, event):
         space = context.space_data
+        # Ignore operator when running in wrong context.
+        if self.run_in_geometry_nodes != (space.tree_type == "GeometryNodeTree"):
+            return {'PASS_THROUGH'}
+
         shader_type = space.shader_type
         self.init_shader_variables(space, shader_type)
         shader_types = [x[1] for x in shaders_shader_nodes_props]
@@ -1888,7 +1890,7 @@ class NWPreviewNode(Operator, NWBase):
                 # Exit early
                 if not valid:
                     return {'FINISHED'}
-                
+
                 delete_sockets = []
 
                 # Scan through all nodes in tree including nodes inside of groups to find viewer sockets
@@ -1921,7 +1923,7 @@ class NWPreviewNode(Operator, NWBase):
                     if out_i is None:
                         return {'FINISHED'}
                     socket_type = 'GEOMETRY'
-                    # Find an input socket of the output of type geometry 
+                    # Find an input socket of the output of type geometry
                     geometryoutindex = None
                     for i,inp in enumerate(geometryoutput.inputs):
                         if inp.type == socket_type:
@@ -2425,13 +2427,13 @@ class NWMergeNodes(Operator, NWBase):
     # Check if the link connects to a node that is in selected_nodes
     # If not, then check recursively for each link in the nodes outputs.
     # If yes, return True. If the recursion stops without finding a node
-    # in selected_nodes, it returns False. The depth is used to prevent 
+    # in selected_nodes, it returns False. The depth is used to prevent
     # getting stuck in a loop because of an already present cycle.
     @staticmethod
     def link_creates_cycle(link, selected_nodes, depth=0)->bool:
         if depth > 255:
             # We're stuck in a cycle, but that cycle was already present,
-            # so we return False. 
+            # so we return False.
             # NOTE: The number 255 is arbitrary, but seems to work well.
             return False
         node = link.to_node
@@ -2446,7 +2448,7 @@ class NWMergeNodes(Operator, NWBase):
                         return True
         # None of the outputs found a node in selected_nodes, so there is no cycle.
         return False
-    
+
     # Merge the nodes in `nodes_list` with a node of type `node_name` that has a multi_input socket.
     # The parameters `socket_indices` gives the indices of the node sockets in the order that they should
     # be connected. The last one is assumed to be a multi input socket.
@@ -2592,7 +2594,7 @@ class NWMergeNodes(Operator, NWBase):
             # get maximum loc_x
             loc_x = nodes_list[0][1] + nodes_list[0][3] + 70
             nodes_list.sort(key=lambda k: k[2], reverse=True)
-            
+
             # Change the node type for math nodes in a geometry node tree.
             if tree_type == 'GEOMETRY':
                 if nodes_list is selected_math or nodes_list is selected_vector:
@@ -2704,7 +2706,7 @@ class NWMergeNodes(Operator, NWBase):
                 add.location = loc_x, loc_y
                 loc_y += offset_y
                 add.select = True
-            
+
             # This has already been handled separately
             if was_multi:
                 continue
@@ -2716,7 +2718,7 @@ class NWMergeNodes(Operator, NWBase):
             last_add = nodes[count_before]
             # Create list of invalid indexes.
             invalid_nodes = [nodes[n[0]] for n in (selected_mix + selected_math + selected_shader + selected_z + selected_geometry)]
-            
+
             # Special case:
             # Two nodes were selected and first selected has no output links, second selected has output links.
             # Then add links from last add to all links 'to_socket' of out links of second selected.
@@ -3171,7 +3173,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
     relative_path: BoolProperty(
         name='Relative Path',
-        description='Select the file relative to the blend file',
+        description='Set the file path relative to the blend file, when possible',
         default=True
     )
 
@@ -3271,10 +3273,10 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         import_path = self.directory
         if self.relative_path:
             if bpy.data.filepath:
-                import_path = bpy.path.relpath(self.directory)
-            else:
-                self.report({'WARNING'}, 'Relative paths cannot be used with unsaved scenes!')
-                print('Relative paths cannot be used with unsaved scenes!')
+                try:
+                    import_path = bpy.path.relpath(self.directory)
+                except ValueError:
+                    pass
 
         # Add found images
         print('\nMatched Textures:')
@@ -4380,7 +4382,7 @@ class NWConnectionListOutputs(Menu, NWBase):
         n1 = nodes[context.scene.NWLazySource]
         index=0
         for o in n1.outputs:
-            # Only show sockets that are exposed. 
+            # Only show sockets that are exposed.
             if o.enabled:
                 layout.operator(NWCallInputsMenu.bl_idname, text=o.name, icon="RADIOBUT_OFF").from_socket=index
             index+=1
@@ -4401,7 +4403,7 @@ class NWConnectionListInputs(Menu, NWBase):
             # Only show sockets that are exposed.
             # This prevents, for example, the scale value socket
             # of the vector math node being added to the list when
-            # the mode is not 'SCALE'. 
+            # the mode is not 'SCALE'.
             if i.enabled:
                 op = layout.operator(NWMakeLink.bl_idname, text=i.name, icon="FORWARD")
                 op.from_socket = context.scene.NWSourceSocket
@@ -4984,6 +4986,9 @@ def draw_switch_category_submenu(self, context):
                 props.to_type = node.nodetype
     else:
         for node in self.category.items(context):
+            if isinstance(node, NodeItemCustom):
+                node.draw(self, layout, context)
+                continue
             props = layout.operator(NWSwitchNodeType.bl_idname, text=node.label)
             props.geo_to_type = node.nodetype
 
@@ -5206,7 +5211,8 @@ kmi_defs = (
     # Swap Outputs
     (NWSwapLinks.bl_idname, 'S', 'PRESS', False, False, True, None, "Swap Outputs"),
     # Preview Node
-    (NWPreviewNode.bl_idname, 'LEFTMOUSE', 'PRESS', True, True, False, None, "Preview node output"),
+    (NWPreviewNode.bl_idname, 'LEFTMOUSE', 'PRESS', True, True, False, (('run_in_geometry_nodes', False),), "Preview node output"),
+    (NWPreviewNode.bl_idname, 'LEFTMOUSE', 'PRESS', False, True, True, (('run_in_geometry_nodes', True),), "Preview node output"),
     # Reload Images
     (NWReloadImages.bl_idname, 'R', 'PRESS', False, False, True, None, "Reload images"),
     # Lazy Mix
