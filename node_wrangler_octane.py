@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 0),
+    "version": (1, 1),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane",
@@ -747,7 +747,7 @@ def get_nodes_from_category(category_name, context):
             return sorted(category.items(context), key=lambda node: node.label)
 
 def is_visible_socket(socket):
-    return not socket.hide and socket.enabled and socket.type != 'CUSTOM'
+    return not socket.hide and socket.enabled
 
 def nice_hotkey_name(punc):
     # convert the ugly string name into the actual character
@@ -2113,12 +2113,14 @@ class NWPreviewNode(Operator, NWBase):
             # What follows is code for the shader editor
             output_types = [x[1] for x in shaders_output_nodes_props]
             valid = False
+
             if active:
                 if (active.name != "Emission Viewer") and (active.type not in output_types):
                     for out in active.outputs:
                         if is_visible_socket(out):
                             valid = True
                             break
+
             if valid:
                 # get material_output node
                 materialout = None  # placeholder node
@@ -2153,7 +2155,7 @@ class NWPreviewNode(Operator, NWBase):
                 delete_nodes = [] # store unused nodes to delete in the end
                 if active.outputs:
                     # If output type not 'SHADER' - "Emission Viewer" needed
-                    if active.outputs[out_i].type != 'SHADER' and active.outputs[out_i].type != 'VALUE':
+                    if active.outputs[out_i].type != 'SHADER' and active.outputs[out_i].type != 'VALUE' and active.outputs[out_i].type != 'CUSTOM':
                         socket_type = 'NodeSocketColor'
                         # get Emission Viewer node
                         emission_exists = False
