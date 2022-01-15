@@ -34,4 +34,4 @@ Please, let me know if you notice any unexpected behavior/feedback, be free to c
 If you feel like spending money to help, any donation are appreciated by this link and will literaly make our lives better: https://www.blender.org/foundation/donation-payment/
 
 # But I Love You!
-You can always buy me a coffee if you want, https://www.buymeacoffee.com/aisatan
+You can always buy me a coffee if you want, https://www.buymeacoffee.com/aisatan or just give me a follow https://www.instagram.com/imp_9766
