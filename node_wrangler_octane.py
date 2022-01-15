@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 1),
+    "version": (1, 2),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane",
@@ -3355,7 +3355,13 @@ class NWAddTextureSetup(Operator, NWBase):
                     tex = nodes.new(image_type)
                     tex.location = [locx - 200, locy + 112]
                     nodes.active = tex
-                    links.new(tex.outputs[0], t_node.inputs[1])
+                    print(t_node.inputs[0].name)
+                    if 'Texture' in t_node.inputs:
+                        links.new(tex.outputs[0], t_node.inputs['Texture'])
+                    elif 'Albedo' in t_node.inputs:
+                        links.new(tex.outputs[0], t_node.inputs['Albedo'])
+                    else:
+                        links.new(tex.outputs[0], t_node.inputs[1])
 
                 t_node.select = False
                 if self.add_mapping or is_texture:
