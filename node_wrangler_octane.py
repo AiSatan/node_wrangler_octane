@@ -2155,7 +2155,7 @@ class NWPreviewNode(Operator, NWBase):
                 delete_nodes = [] # store unused nodes to delete in the end
                 if active.outputs:
                     # If output type not 'SHADER' - "Emission Viewer" needed
-                    if active.outputs[out_i].type != 'SHADER' and active.outputs[out_i].type != 'VALUE' and active.outputs[out_i].type != 'CUSTOM':
+                    if active.outputs[out_i].type != 'SHADER' and active.outputs[out_i].type != 'VALUE' and active.outputs[out_i].name != 'Material out':
                         socket_type = 'NodeSocketColor'
                         # get Emission Viewer node
                         emission_exists = False
