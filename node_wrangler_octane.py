@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 1, 4),
+    "version": (1, 1, 5),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane",
@@ -28,7 +28,10 @@ bl_info = {
     "category": "Node",
 }
 
-from asyncio.windows_events import NULL
+import os
+if os.name == 'nt':
+    from asyncio.windows_events import NULL
+    
 import bpy, blf, bgl
 import gpu
 from bpy.types import Operator, Panel, Menu
