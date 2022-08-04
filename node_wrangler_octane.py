@@ -5010,7 +5010,7 @@ class NWConnectionListInputs(Menu, NWBase):
                 op = layout.operator(NWMakeLink.bl_idname, text=i.name, icon="FORWARD")
                 op.from_socket = context.scene.NWSourceSocket
                 op.to_socket = index
-                index+=1
+            index+=1
 
 
 class NWMergeMathMenu(Menu, NWBase):
