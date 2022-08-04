@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 1, 5),
+    "version": (1, 1, 6),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane",
@@ -5010,7 +5010,7 @@ class NWConnectionListInputs(Menu, NWBase):
                 op = layout.operator(NWMakeLink.bl_idname, text=i.name, icon="FORWARD")
                 op.from_socket = context.scene.NWSourceSocket
                 op.to_socket = index
-                index+=1
+            index+=1
 
 
 class NWMergeMathMenu(Menu, NWBase):
