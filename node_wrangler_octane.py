@@ -19,10 +19,10 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 1, 5),
+    "version": (1, 2, 0),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
-    "description": "Various tools to enhance and speed up node-based workflow with Octane",
+    "description": "Various tools to enhance and speed up node-based workflow with Octane (26.3)",
     "warning": "",
     "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
     "category": "Node",
