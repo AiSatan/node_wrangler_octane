@@ -1433,6 +1433,7 @@ class NWPreviewNode(Operator, NWBase):
         return socket in self.used_viewer_sockets_other_mats
 
     def invoke_octane(self, context, event):
+        print("octane, 1436: " + "invoke_octane(self, context, event)")
         space = context.space_data
         # Ignore operator when running in wrong context.
         if self.run_in_geometry_nodes != (space.tree_type == "GeometryNodeTree"):
