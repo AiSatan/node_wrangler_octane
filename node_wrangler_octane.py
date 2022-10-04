@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 bl_info = {
-    "name": "Node Wrangler",
-    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer",
-    "version": (3, 41),
+    "name": "Node Wrangler (Custom build for Octane)",
+    "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
+    "version": (1, 2, 0),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
-    "description": "Various tools to enhance and speed up node-based workflow",
+    "description": "Various tools to enhance and speed up node-based workflow with Octane",
     "warning": "",
-    "doc_url": "{BLENDER_MANUAL_URL}/addons/node/node_wrangler.html",
+    "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
     "category": "Node",
 }
 
@@ -1432,7 +1432,192 @@ class NWPreviewNode(Operator, NWBase):
                     self.search_sockets(materialout, self.used_viewer_sockets_other_mats)
         return socket in self.used_viewer_sockets_other_mats
 
+    def invoke_octane(self, context, event):
+        space = context.space_data
+        # Ignore operator when running in wrong context.
+        if self.run_in_geometry_nodes != (space.tree_type == "GeometryNodeTree"):
+            return {'PASS_THROUGH'}
+
+        shader_type = space.shader_type
+        self.init_shader_variables(space, shader_type)
+        mlocx = event.mouse_region_x
+        mlocy = event.mouse_region_y
+        select_node = bpy.ops.node.select(location=(mlocx, mlocy), extend=False)
+        if 'FINISHED' in select_node:  # only run if mouse click is on a node
+            active_tree, path_to_tree = get_active_tree(context)
+            nodes, links = active_tree.nodes, active_tree.links
+            base_node_tree = space.node_tree
+            active = nodes.active
+
+            # For geometry node trees we just connect to the group output
+            if space.tree_type == "GeometryNodeTree":
+                valid = False
+                if active:
+                    for out in active.outputs:
+                        if is_visible_socket(out):
+                            valid = True
+                            break
+                # Exit early
+                if not valid:
+                    return {'FINISHED'}
+
+                delete_sockets = []
+
+                # Scan through all nodes in tree including nodes inside of groups to find viewer sockets
+                self.scan_nodes(base_node_tree, delete_sockets)
+
+                # Find (or create if needed) the output of this node tree
+                geometryoutput = self.ensure_group_output(base_node_tree)
+
+                # Analyze outputs, make links
+                out_i = None
+                valid_outputs = []
+                for i, out in enumerate(active.outputs):
+                    if is_visible_socket(out) and out.type == 'GEOMETRY':
+                        valid_outputs.append(i)
+                if valid_outputs:
+                    out_i = valid_outputs[0]  # Start index of node's outputs
+                for i, valid_i in enumerate(valid_outputs):
+                    for out_link in active.outputs[valid_i].links:
+                        if is_viewer_link(out_link, geometryoutput):
+                            if nodes == base_node_tree.nodes or self.link_leads_to_used_socket(out_link):
+                                if i < len(valid_outputs) - 1:
+                                    out_i = valid_outputs[i + 1]
+                                else:
+                                    out_i = valid_outputs[0]
+
+                make_links = []  # store sockets for new links
+                if active.outputs:
+                    # If there is no 'GEOMETRY' output type - We can't preview the node
+                    if out_i is None:
+                        return {'FINISHED'}
+                    socket_type = 'GEOMETRY'
+                    # Find an input socket of the output of type geometry
+                    geometryoutindex = None
+                    for i,inp in enumerate(geometryoutput.inputs):
+                        if inp.type == socket_type:
+                            geometryoutindex = i
+                            break
+                    if geometryoutindex is None:
+                        # Create geometry socket
+                        geometryoutput.inputs.new(socket_type, 'Geometry')
+                        geometryoutindex = len(geometryoutput.inputs) - 1
+
+                    make_links.append((active.outputs[out_i], geometryoutput.inputs[geometryoutindex]))
+                    output_socket = geometryoutput.inputs[geometryoutindex]
+                    for li_from, li_to in make_links:
+                        base_node_tree.links.new(li_from, li_to)
+                    tree = base_node_tree
+                    link_end = output_socket
+                    while tree.nodes.active != active:
+                        node = tree.nodes.active
+                        index = self.ensure_viewer_socket(node,'NodeSocketGeometry', connect_socket=active.outputs[out_i] if node.node_tree.nodes.active == active else None)
+                        link_start = node.outputs[index]
+                        node_socket = node.node_tree.outputs[index]
+                        if node_socket in delete_sockets:
+                            delete_sockets.remove(node_socket)
+                        tree.links.new(link_start, link_end)
+                        # Iterate
+                        link_end = self.ensure_group_output(node.node_tree).inputs[index]
+                        tree = tree.nodes.active.node_tree
+                    tree.links.new(active.outputs[out_i], link_end)
+
+                # Delete sockets
+                for socket in delete_sockets:
+                    tree = socket.id_data
+                    tree.outputs.remove(socket)
+
+                nodes.active = active
+                active.select = True
+                force_update(context)
+                return {'FINISHED'}
+
+
+            # What follows is code for the shader editor
+            output_types = [x.nodetype for x in
+                            get_nodes_from_category('Output', context)]
+            valid = False
+            if active:
+                if active.rna_type.identifier not in output_types:
+                    for out in active.outputs:
+                        if is_visible_socket(out):
+                            valid = True
+                            break
+            if valid:
+                # get material_output node
+                materialout = None  # placeholder node
+                delete_sockets = []
+
+                #scan through all nodes in tree including nodes inside of groups to find viewer sockets
+                self.scan_nodes(base_node_tree, delete_sockets)
+
+                materialout = self.get_shader_output_node(base_node_tree)
+                if not materialout:
+                    materialout = base_node_tree.nodes.new(self.shader_output_ident)
+                    materialout.location = get_output_location(base_node_tree)
+                    materialout.select = False
+                # Analyze outputs
+                out_i = None
+                valid_outputs = []
+                for i, out in enumerate(active.outputs):
+                    if is_visible_socket(out):
+                        valid_outputs.append(i)
+                if valid_outputs:
+                    out_i = valid_outputs[0]  # Start index of node's outputs
+                for i, valid_i in enumerate(valid_outputs):
+                    for out_link in active.outputs[valid_i].links:
+                        if is_viewer_link(out_link, materialout):
+                            if nodes == base_node_tree.nodes or self.link_leads_to_used_socket(out_link):
+                                if i < len(valid_outputs) - 1:
+                                    out_i = valid_outputs[i + 1]
+                                else:
+                                    out_i = valid_outputs[0]
+
+                make_links = []  # store sockets for new links
+                if active.outputs:
+                    socket_type = 'NodeSocketShader'
+                    materialout_index = 1 if active.outputs[out_i].name == "Volume" else 0
+                    make_links.append((active.outputs[out_i], materialout.inputs[materialout_index]))
+                    output_socket = materialout.inputs[materialout_index]
+                    for li_from, li_to in make_links:
+                        base_node_tree.links.new(li_from, li_to)
+
+                    # Create links through node groups until we reach the active node
+                    tree = base_node_tree
+                    link_end = output_socket
+                    while tree.nodes.active != active:
+                        node = tree.nodes.active
+                        index = self.ensure_viewer_socket(node, socket_type, connect_socket=active.outputs[out_i] if node.node_tree.nodes.active == active else None)
+                        link_start = node.outputs[index]
+                        node_socket = node.node_tree.outputs[index]
+                        if node_socket in delete_sockets:
+                            delete_sockets.remove(node_socket)
+                        tree.links.new(link_start, link_end)
+                        # Iterate
+                        link_end = self.ensure_group_output(node.node_tree).inputs[index]
+                        tree = tree.nodes.active.node_tree
+                    tree.links.new(active.outputs[out_i], link_end)
+
+                # Delete sockets
+                for socket in delete_sockets:
+                    if not self.is_socket_used_other_mats(socket):
+                        tree = socket.id_data
+                        tree.outputs.remove(socket)
+
+                nodes.active = active
+                active.select = True
+
+                force_update(context)
+
+            return {'FINISHED'}
+        else:
+            return {'CANCELLED'}
+
     def invoke(self, context, event):
+        # octane patch
+        if context.scene.render.engine != 'octane':	
+            return self.invoke_octane(context, event)
+
         space = context.space_data
         # Ignore operator when running in wrong context.
         if self.run_in_geometry_nodes != (space.tree_type == "GeometryNodeTree"):
