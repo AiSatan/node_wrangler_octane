@@ -34,4 +34,5 @@ Please, let me know if you notice any unexpected behavior/feedback, be free to c
 If you feel like spending money to help, any donation are appreciated by this link and will literaly make our lives better: https://www.blender.org/foundation/donation-payment/
 
 # Tests
-✅ Octane [26.3]: https://render.otoy.com/forum/viewtopic.php?f=113&t=79938
+✅ Octane [26.3] - with nw_octane [1.1.6]
+✅ Octane [2021.1.6 26.4] - with nw_octane [1.2.0]
