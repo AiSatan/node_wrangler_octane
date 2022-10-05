@@ -1579,7 +1579,38 @@ class NWPreviewNode(Operator, NWBase):
                     socket_type = 'NodeSocketShader'
                     materialout_index = 1 if active.outputs[out_i].name == "Volume" else 0
                     make_links.append((active.outputs[out_i], materialout.inputs[materialout_index]))
-                    output_socket = materialout.inputs[materialout_index]
+
+                    for node in base_node_tree.nodes:
+                        if "Emission Viewer" in node.name:
+                            base_node_tree.nodes.remove(node)
+                            continue
+                        if "Oct Emission Viewer" in node.name:
+                            base_node_tree.nodes.remove(node)
+                            continue
+                    # octane
+                    print("in octane")
+
+                    emission = base_node_tree.nodes.new("ShaderNodeOctDiffuseMat")
+                    emission.label = "Octane Viewer"
+                    emission.inputs[0].default_value = (0, 0, 0, 1)  
+                                
+                    ExposureComp = base_node_tree.nodes.new("OctaneTextureEmission")	
+                    ExposureComp.label = "Octane Viewer"	
+                    ExposureComp.hide = True	
+                    ExposureComp.inputs[1].default_value = (1/context.scene.oct_view_cam.exposure)	
+                    ExposureComp.inputs[2].default_value = True	
+                    ExposureComp.inputs[8].default_value = False	
+                    ExposureComp.inputs[9].default_value = False	
+                    ExposureComp.location = [materialout.location.x, (materialout.location.y + 45)]	
+                    ExposureComp.name = "Oct Emission Viewer"	
+                    make_links.append((ExposureComp.outputs[0],emission.inputs[12]))	
+                    make_links.append((ExposureComp.inputs[0],active.outputs[0]))
+
+                    # end octane
+
+
+                    output_socket = ExposureComp.inputs[0]
+
                     for li_from, li_to in make_links:
                         base_node_tree.links.new(li_from, li_to)
 
@@ -1616,7 +1647,7 @@ class NWPreviewNode(Operator, NWBase):
 
     def invoke(self, context, event):
         # octane patch
-        if context.scene.render.engine != 'octane':	
+        if context.scene.render.engine == 'octane':	
             return self.invoke_octane(context, event)
 
         space = context.space_data
