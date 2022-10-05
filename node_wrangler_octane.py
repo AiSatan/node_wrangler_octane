@@ -1919,7 +1919,43 @@ class NWReloadImages(Operator):
                         break
         return valid
 
+    def execute_octane(self, context):
+        nodes, links = get_nodes_links(context)
+        image_types = ["IMAGE", "TEX_IMAGE", "TEX_ENVIRONMENT", "TEXTURE", "OCT_IMAGE_TEX", "OCT_FIMAGE_TEX", "OCT_IMAGE_TILE_TEX" ]
+        num_reloaded = 0
+        for node in nodes:
+            if node.type in image_types:
+                if node.type == "TEXTURE":
+                    if node.texture:  # node has texture assigned
+                        if node.texture.type in ['IMAGE', 'ENVIRONMENT_MAP']:
+                            if node.texture.image:  # texture has image assigned
+                                node.texture.image.reload()
+                                num_reloaded += 1
+                else:
+                    if node.image:
+                        try:
+                            if node.hdr_tex_bit_depth == 'OCT_HDR_BIT_DEPTH_32':
+                                node.hdr_tex_bit_depth = 'OCT_HDR_BIT_DEPTH_16'
+                            else:
+                                node.hdr_tex_bit_depth = 'OCT_HDR_BIT_DEPTH_32'
+                        except:
+                            node.image.reload()
+                        num_reloaded += 1
+
+        if num_reloaded:
+            self.report({'INFO'}, "Reloaded images")
+            print("Reloaded " + str(num_reloaded) + " images")
+            force_update(context)
+            return {'FINISHED'}
+        else:
+            self.report({'WARNING'}, "No images found to reload in this node tree O")
+            return {'CANCELLED'}
+
+
     def execute(self, context):
+        if context.scene.render.engine == 'octane':
+            return self.execute_octane(context)
+
         nodes, links = get_nodes_links(context)
         image_types = ["IMAGE", "TEX_IMAGE", "TEX_ENVIRONMENT", "TEXTURE"]
         num_reloaded = 0
