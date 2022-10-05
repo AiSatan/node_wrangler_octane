@@ -757,6 +757,15 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         default='CENTER',
         description="When merging nodes with the Ctrl+Numpad0 hotkey (and similar) specify the position of the new nodes")
 
+    texture_setup_displacement: EnumProperty(
+        name="Shader's texture setup displacement",
+        items=(
+            ("OctaneTextureDisplacement", "Texture Displacement node", "Setup node will use Texture Displacement node"),
+            ("OctaneVertexDisplacement", "Vertex Displacement node", "Setup node will use Vertex Displacement node")
+        ),
+        default='OctaneTextureDisplacement',
+        description="When setup textures for shader, for displacement it'll use this node")
+
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
         default=False,
@@ -780,6 +789,7 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         col = layout.column()
         col.prop(self, "merge_position")
         col.prop(self, "merge_hide")
+        col.prop(self, "texture_setup_displacement")
 
         box = layout.box()
         col = box.column(align=True)
