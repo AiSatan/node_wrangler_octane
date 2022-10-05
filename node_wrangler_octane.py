@@ -1579,35 +1579,43 @@ class NWPreviewNode(Operator, NWBase):
                     socket_type = 'NodeSocketShader'
                     materialout_index = 1 if active.outputs[out_i].name == "Volume" else 0
                     make_links.append((active.outputs[out_i], materialout.inputs[materialout_index]))
-
-                    for node in base_node_tree.nodes:
-                        if "Emission Viewer" in node.name:
-                            base_node_tree.nodes.remove(node)
-                            continue
-                        if "Oct Emission Viewer" in node.name:
-                            base_node_tree.nodes.remove(node)
-                            continue
+                    
                     # octane
                     print("in octane")
+
+                    for node in base_node_tree.nodes:
+                        if "Emission Viewer" == node.name:
+                            base_node_tree.nodes.remove(node)
+                            continue
+                        if "Oct Emission Viewer" == node.name:
+                            base_node_tree.nodes.remove(node)
+                            continue
+                        if "Octane Viewer" == node.name:
+                            base_node_tree.nodes.remove(node)
+                            continue
 
                     emission = base_node_tree.nodes.new("ShaderNodeOctDiffuseMat")
                     emission.label = "Octane Viewer"
                     emission.inputs[0].default_value = (0, 0, 0, 1)  
-                                
+                    emission.name = "Octane Viewer"
+                    emission.location = [materialout.location.x - 100, (materialout.location.y + 50)]	
+                    emission.hide = True	
+
                     ExposureComp = base_node_tree.nodes.new("OctaneTextureEmission")	
-                    ExposureComp.label = "Octane Viewer"	
+                    ExposureComp.label = "Oct Emission Viewer"	
                     ExposureComp.hide = True	
                     ExposureComp.inputs[1].default_value = (1/context.scene.oct_view_cam.exposure)	
                     ExposureComp.inputs[2].default_value = True	
                     ExposureComp.inputs[8].default_value = False	
                     ExposureComp.inputs[9].default_value = False	
-                    ExposureComp.location = [materialout.location.x, (materialout.location.y + 45)]	
-                    ExposureComp.name = "Oct Emission Viewer"	
+                    ExposureComp.location = [materialout.location.x - 50, (materialout.location.y + 50)]	
+                    ExposureComp.name = "Oct Emission Viewer"
+                    
+                    make_links.append((emission.outputs[0], materialout.inputs[materialout_index]))	
                     make_links.append((ExposureComp.outputs[0],emission.inputs[12]))	
                     make_links.append((ExposureComp.inputs[0],active.outputs[0]))
 
                     # end octane
-
 
                     output_socket = ExposureComp.inputs[0]
 
