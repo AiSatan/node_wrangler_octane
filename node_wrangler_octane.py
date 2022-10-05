@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 bl_info = {
-    "name": "Node Wrangler (Custom build for Octane ",
+    "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
     "version": (1, 2, 0),
     "blender": (2, 93, 0),
