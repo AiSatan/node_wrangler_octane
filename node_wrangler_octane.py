@@ -2404,11 +2404,35 @@ class NWMergeNodes(Operator, NWBase):
             was_multi = False
             for i in range(the_range):
                 if nodes_list == selected_mix:
-                    add_type = node_type + 'MixRGB'
-                    add = nodes.new(add_type)
-                    add.blend_type = mode
-                    if mode != 'MIX':
-                        add.inputs[0].default_value = 1.0
+                    add = None
+                    if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                        if mode == 'ADD':
+                            add_type = node_type + 'OctAddTex'
+                            first = 0
+                            second = 1
+                        elif mode == 'MIX':
+                            add_type = node_type + 'OctMixTex'
+                            first = 1
+                            second = 2
+                        elif mode == 'SUBTRACT':
+                            add_type = node_type + 'OctSubtractTex'
+                            first = 0
+                            second = 1
+                        elif mode == 'MULTIPLY':
+                            add_type = node_type + 'OctMultiplyTex'
+                            first = 0
+                            second = 1
+                        elif mode == 'DIVIDE':
+                            add_type = node_type + 'OctCosineMixTex'
+                            first = 1
+                            second = 2
+                        add = nodes.new(add_type)
+                    else:
+                        add_type = node_type + 'MixRGB'
+                        add = nodes.new(add_type)
+                        add.blend_type = mode
+                        if mode != 'MIX':
+                            add.inputs[0].default_value = 1.0
                     add.show_preview = False
                     add.hide = do_hide
                     if do_hide:
@@ -2428,7 +2452,10 @@ class NWMergeNodes(Operator, NWBase):
                     add.width_hidden = 100.0
                 elif nodes_list == selected_shader:
                     if mode == 'MIX':
-                        add_type = node_type + 'MixShader'
+                        if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                            add_type = node_type + 'OctMixMat'
+                        else:
+                            add_type = node_type + 'MixShader'
                         add = nodes.new(add_type)
                         add.hide = do_hide_shader
                         if do_hide_shader:
@@ -2437,7 +2464,10 @@ class NWMergeNodes(Operator, NWBase):
                         second = 2
                         add.width_hidden = 100.0
                     elif mode == 'ADD':
-                        add_type = node_type + 'AddShader'
+                        if node_type == 'ShaderNode' and context.scene.render.engine == 'octane':
+                            add_type = node_type + 'OctLayeredMat'
+                        else:
+                            add_type = node_type + 'AddShader'
                         add = nodes.new(add_type)
                         add.hide = do_hide_shader
                         if do_hide_shader:
