@@ -37,3 +37,5 @@ If you feel like spending money to help, any donation are appreciated by this li
 ✅ Octane [26.3] - with nw_octane [1.1.6]
 
 ✅ Octane [26.4] - with nw_octane [1.2.0]
+
+✅ Octane [26.5] - with nw_octane [1.2.1]
