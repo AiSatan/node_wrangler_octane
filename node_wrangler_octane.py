@@ -1560,6 +1560,10 @@ class NWPreviewNode(Operator, NWBase):
                                 valid = True
                                 oct_valid = True
                                 break
+                            elif active.outputs[0].name == "Texture out":
+                                valid = True
+                                oct_valid = True
+                                break
                         except:
                             pass
             if valid:
