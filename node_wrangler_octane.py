@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 2, 1),
+    "version": (1, 2, 2),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane based on NW-v3.40",
@@ -195,6 +195,11 @@ def get_nodes_from_category(category_name, context):
     for category in node_categories_iter(context):
         if category.name == category_name:
             return sorted(category.items(context), key=lambda node: node.label)
+
+def get_nodes_from_category_octane(category_name, context):
+    for category in node_categories_iter(context):
+        if category.name == category_name:
+            return category.items(context)
 
 def get_first_enabled_output(node):
     for output in node.outputs:
@@ -2910,87 +2915,92 @@ class NWAddTextureSetup(Operator, NWBase):
 
     def execute_octane(self, context):
         nodes, links = get_nodes_links(context)
-        shader_types = [x[1] for x in shaders_shader_nodes_props if x[1] not in {'MIX_SHADER', 'ADD_SHADER'}]
-        texture_types = [x[1] for x in octane_textures_node_layout]
-        procedural_types = [x[1] for x in octane_textureprocedural_node_layout]
+
+        texture_types = [x.nodetype for x in
+                         get_nodes_from_category_octane('Octane Material', context)]
         selected_nodes = [n for n in nodes if n.select]
-        for t_node in selected_nodes:
-            valid = False
+
+        for node in selected_nodes:
+            if not node.inputs:
+                continue
+
             input_index = 0
-            if t_node.inputs:
-                for index, i in enumerate(t_node.inputs):
-                    if not i.is_linked:
-                        valid = True
-                        input_index = index
+            target_input = node.inputs[0]
+            for input in node.inputs:
+                if input.enabled:
+                    input_index += 1
+                    if not input.is_linked:
+                        target_input = input
                         break
-            if valid:
-                locx = t_node.location.x
-                locy = t_node.location.y - t_node.dimensions.y/2
-                xoffset = [500, 700]
-                is_texture = False
-                is_proc = False
-                if t_node.bl_idname in texture_types + procedural_types:
-                    xoffset = [290, 500]
-                    is_texture = True
-                    if t_node.bl_idname in procedural_types:
-                        is_proc = True
-                coordout = 2
-                image_type = 'ShaderNodeOctImageTex'
-
-                if (t_node.type in texture_types and t_node.type != 'TEX_IMAGE') or (t_node.type == 'BACKGROUND'):
-                    coordout = 0  # image texture uses UVs, procedural textures and Background shader use Generated
-                    if t_node.type == 'BACKGROUND':
-                        image_type = 'ShaderNodeTexEnvironment'
-
-                if not is_texture:
-                    tex = nodes.new(image_type)
-                    tex.location = [locx - 200, locy + 112]
-                    nodes.active = tex
-                    print(t_node.inputs[0].name)
-                    if 'Texture' in t_node.inputs:
-                        links.new(tex.outputs[0], t_node.inputs['Texture'])
-                    elif 'Albedo' in t_node.inputs:
-                        links.new(tex.outputs[0], t_node.inputs['Albedo'])
-                    else:
-                        links.new(tex.outputs[0], t_node.inputs[1])
-
-                t_node.select = False
-                if self.add_mapping or is_texture:
-                    if t_node.bl_idname != 'OctaneMeshUVProjection':
-                        m = nodes.new('OctaneTransformValue')
-                        m.location = [locx - xoffset[0], locy + 141]
-                        m.width = 240
-                    else:
-                        m = t_node
-                    coord = nodes.new('OctaneMeshUVProjection')
-                    coord.location = [locx - (200 if t_node.type == 'MAPPING' else xoffset[1]), locy + 124]
-
-                    if not is_texture:
-                        links.new(m.outputs[0], tex.inputs[5])
-                        links.new(coord.outputs[0], tex.inputs[6])
-                    else:
-                        nodes.active = m
-                        if is_proc:
-                            if 'Transform' in t_node.inputs:
-                                links.new(m.outputs[0], t_node.inputs['Transform'])
-                            else:
-                                # delete node
-                                t_node.select = False
-                                # only node is selected now
-                                bpy.ops.node.delete()
-
-                            if 'Projection' in t_node.inputs:
-                                links.new(coord.outputs[0], t_node.inputs['Projection'])
-                            else:
-                                # delete node
-                                t_node.select = False
-                                # only node is selected now
-                                bpy.ops.node.delete()
-                        else:
-                            links.new(m.outputs[0], t_node.inputs[5])
-                            links.new(coord.outputs[0], t_node.inputs[6])
             else:
-                self.report({'WARNING'}, "No free inputs for node: "+t_node.name)
+                self.report({'WARNING'}, "No free inputs for node: " + node.name)
+                continue
+
+            x_offset = 0
+            padding = 40.0
+            locx = node.location.x
+            locy = node.location.y - (input_index * padding)
+
+            is_texture_node = node.rna_type.identifier in texture_types
+            use_environment_texture = node.outputs[0].name == 'Environment out'
+
+            # Add an image texture before normal shader nodes.
+            if use_environment_texture:
+                pass
+                #image_texture_type = 'ShaderNodeTexEnvironment' if not use_environment_texture else 'ShaderNodeOctImageTex'
+                #image_texture_node = nodes.new(image_texture_type)
+                #x_offset = x_offset + image_texture_node.width + padding
+                #image_texture_node.location = [locx - x_offset, locy]
+                #nodes.active = image_texture_node
+                #links.new(image_texture_node.outputs[0], target_input)
+
+                ### The mapping setup following this will connect to the firrst input of this image texture.
+                #target_input = image_texture_node.inputs[0]
+
+            node.select = False
+            if is_texture_node or self.add_mapping or 'Environment out' in node.outputs:
+                is_procedural_texture = is_texture_node and node.type != 'TEX_IMAGE' or 'Environment out' in node.outputs
+
+                # Add Mapping node.
+                if is_procedural_texture:
+                    mapping_node = nodes.new('ShaderNodeOctImageTex')
+                    x_offset = x_offset + mapping_node.width + padding
+                    mapping_node.location = [locx - x_offset, locy]
+                    if "Albedo" in node.inputs:
+                        links.new(mapping_node.outputs[0], node.inputs["Albedo"])
+                    elif "Diffuse" in node.inputs:
+                        links.new(mapping_node.outputs[0], node.inputs["Diffuse"])
+                    elif "Diffuse color" in node.inputs:
+                        links.new(mapping_node.outputs[0], node.inputs["Diffuse color"])
+                    elif "Texture" in node.inputs:
+                        links.new(mapping_node.outputs[0], node.inputs["Texture"])
+                else:
+                    mapping_node = node
+
+                # Add Texture Coordinates node.
+                uv_node = nodes.new('OctaneMeshUVProjection')
+                x_offset = x_offset + uv_node.width + padding
+                uv_node.location = [locx - x_offset, locy]
+
+                use_generated_coordinates = is_procedural_texture or use_environment_texture
+                print("is_procedural_texture " + str(is_procedural_texture))
+                print("use_environment_texture " + str(use_environment_texture))
+                tex_coord_output = uv_node.outputs[0]
+                links.new(tex_coord_output, mapping_node.inputs["Projection"])
+
+                # Add Texture Coordinates node.
+                tex_coord_node = nodes.new('OctaneTransformValue')
+                x_offset = x_offset + tex_coord_node.width + padding
+                tex_coord_node.location = [locx - x_offset, locy]
+
+                is_procedural_texture = is_texture_node and node.type != 'TEX_IMAGE'
+                use_generated_coordinates = is_procedural_texture or use_environment_texture
+                tex_coord_output = tex_coord_node.outputs[0]
+                if "Transform" in mapping_node.inputs:
+                    links.new(tex_coord_output, mapping_node.inputs["Transform"])
+                else:
+                    links.new(tex_coord_output, mapping_node.inputs["UVW transform"])
+
         return {'FINISHED'}
 
     def execute(self, context):
