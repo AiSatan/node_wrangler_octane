@@ -2983,8 +2983,6 @@ class NWAddTextureSetup(Operator, NWBase):
                 uv_node.location = [locx - x_offset, locy]
 
                 use_generated_coordinates = is_procedural_texture or use_environment_texture
-                print("is_procedural_texture " + str(is_procedural_texture))
-                print("use_environment_texture " + str(use_environment_texture))
                 tex_coord_output = uv_node.outputs[0]
                 links.new(tex_coord_output, mapping_node.inputs["Projection"])
 
