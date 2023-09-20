@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 2, 2),
+    "version": (1, 2, 3),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane based on NW-v3.40",
@@ -1548,10 +1548,9 @@ class NWPreviewNode(Operator, NWBase):
                 force_update(context)
                 return {'FINISHED'}
 
-
             # What follows is code for the shader editor
             output_types = [x.nodetype for x in
-                            get_nodes_from_category('Output', context)]
+                            get_nodes_from_category_octane('Octane Output', context) if hasattr(x, 'nodetype')]
             valid = False
             oct_valid = False
             if active:
@@ -1624,9 +1623,9 @@ class NWPreviewNode(Operator, NWBase):
 
                     if active.outputs[0].name != "Material out":
 
-                        emission = base_node_tree.nodes.new("ShaderNodeOctDiffuseMat")
+                        emission = base_node_tree.nodes.new("OctaneDiffuseMaterial")
                         emission.label = "Octane Viewer"
-                        emission.inputs[0].default_value = (0, 0, 0, 1)  
+                        emission.inputs[0].default_value = (0, 0, 0)  
                         emission.name = "Octane Viewer"
                         emission.location = [materialout.location.x - 100, (materialout.location.y + 50)]	
                         emission.hide = True	
@@ -1642,7 +1641,7 @@ class NWPreviewNode(Operator, NWBase):
                         ExposureComp.name = "Oct Emission Viewer"
                     
                         make_links.append((emission.outputs[0], materialout.inputs[materialout_index]))	
-                        make_links.append((ExposureComp.outputs[0],emission.inputs[12]))	
+                        make_links.append((ExposureComp.outputs[0],emission.inputs["Emission"]))	
                         make_links.append((ExposureComp.inputs[0],active.outputs[0]))
 
                         output_socket = ExposureComp.inputs[0]
@@ -2917,7 +2916,7 @@ class NWAddTextureSetup(Operator, NWBase):
         nodes, links = get_nodes_links(context)
 
         texture_types = [x.nodetype for x in
-                         get_nodes_from_category_octane('Octane Material', context)]
+                         get_nodes_from_category_octane('Octane Material', context) if hasattr(x, 'nodetype')]
         selected_nodes = [n for n in nodes if n.select]
 
         for node in selected_nodes:
@@ -2942,7 +2941,7 @@ class NWAddTextureSetup(Operator, NWBase):
             locy = node.location.y - (input_index * padding)
 
             is_texture_node = node.rna_type.identifier in texture_types
-            use_environment_texture = node.outputs[0].name == 'Environment out'
+            use_environment_texture = node.outputs and len(node.outputs) > 0 and node.outputs[0].name == 'Environment out'
 
             # Add an image texture before normal shader nodes.
             if use_environment_texture:
@@ -2963,7 +2962,7 @@ class NWAddTextureSetup(Operator, NWBase):
 
                 # Add Mapping node.
                 if is_procedural_texture:
-                    mapping_node = nodes.new('ShaderNodeOctImageTex')
+                    mapping_node = nodes.new('OctaneRGBImage')
                     x_offset = x_offset + mapping_node.width + padding
                     mapping_node.location = [locx - x_offset, locy]
                     if "Albedo" in node.inputs:
@@ -2984,6 +2983,10 @@ class NWAddTextureSetup(Operator, NWBase):
 
                 use_generated_coordinates = is_procedural_texture or use_environment_texture
                 tex_coord_output = uv_node.outputs[0]
+
+                if not mapping_node.inputs.get("Projection"):
+                    self.report({'INFO'}, 'Select Shader Node')
+                    return {'CANCELLED'}
                 links.new(tex_coord_output, mapping_node.inputs["Projection"])
 
                 # Add Texture Coordinates node.
@@ -2997,7 +3000,7 @@ class NWAddTextureSetup(Operator, NWBase):
                 if "Transform" in mapping_node.inputs:
                     links.new(tex_coord_output, mapping_node.inputs["Transform"])
                 else:
-                    links.new(tex_coord_output, mapping_node.inputs["UVW transform"])
+                    links.new(tex_coord_output, mapping_node.inputs["UV transform"])
 
         return {'FINISHED'}
 
@@ -3228,7 +3231,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
             # DISPLACEMENT NODES
             if sname[0] == 'Displacement':
-                disp_texture = nodes.new(type='ShaderNodeOctFloatImageTex')
+                disp_texture = nodes.new(type='OctaneGreyscaleImage')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 disp_texture.image = img
                 disp_texture.label = 'Displacement'
@@ -3263,9 +3266,9 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 texture_node = None
 
                 if sname[0] in ['Metallic', 'Roughness', 'Specular', 'Bump']:
-                    texture_node = nodes.new(type='ShaderNodeOctFloatImageTex')
+                    texture_node = nodes.new(type='OctaneGreyscaleImage')
                 else:
-                    texture_node = nodes.new(type='ShaderNodeOctImageTex')
+                    texture_node = nodes.new(type='OctaneRGBImage')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 texture_node.image = img
 
@@ -3286,7 +3289,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
                     elif match_gloss:
                         # If Gloss Map add invert node
-                        invert_node = nodes.new(type='ShaderNodeOctInvertTex')
+                        invert_node = nodes.new(type='OctaneRGBImage')
                         link = links.new(invert_node.inputs[0], texture_node.outputs[0])
 
                         link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
