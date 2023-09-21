@@ -31,7 +31,7 @@ https://github.com/AiSatan/node_wrangler_octane/releases
 Please, let me know if you notice any unexpected behavior/feedback, be free to create an issue, I will try to figure out. 
 
 # Support+
-If you feel like spending money to help, any donation are appreciated by this link and will literaly make our lives better: https://www.blender.org/foundation/donation-payment/
+If you feel like spending money to help, any donations are appreciated by this link and will literally make our lives better: https://www.blender.org/foundation/donation-payment/
 
 # Tests
 ✅ Octane [26.3] - with nw_octane [1.1.6]
