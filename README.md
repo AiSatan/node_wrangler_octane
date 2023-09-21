@@ -17,7 +17,7 @@ This plugin still can be used with cycle/eevee, it doesn't override any of defau
 
 # Installation
 __Important: please, disable your node_wrangler before instaling this one.__
-Just uncheck it so no conflict will happen
+Just uncheck it so no conflict will happen.
 Install in blender just like any other plugin.
 
 Video example: 
