@@ -34,10 +34,8 @@ Please, let me know if you notice any unexpected behavior/feedback, be free to c
 If you feel like spending money to help, any donations are appreciated by this link and will literally make our lives better: https://www.blender.org/foundation/donation-payment/
 
 # Tests
-✅ Octane [26.3] - with nw_octane [1.1.6]
+✅ octane_blender_addon-28.5-beta - with nw_octane [1.4.0]
 
-✅ Octane [26.4] - with nw_octane [1.2.0]
+✅ Blender_Octane_Edition_2023.1_28.5_stable - with nw_octane [1.4.0]
 
-✅ Octane [26.5] - with nw_octane [1.2.1]
-
-✅ Octane [28.3][TEST] - with nw_octane [1.3.0]
+✅ Blender_Octane_Edition_2022.1_27.16_stable.exe - with nw_octane [1.4.0]
