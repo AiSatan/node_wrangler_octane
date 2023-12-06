@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane based on NW-v3.40",
@@ -200,6 +200,9 @@ def get_nodes_from_category_octane(category_name, context):
     for category in node_categories_iter(context):
         if category.name == category_name:
             return category.items(context)
+
+    # if fails, it means older version?
+    return get_nodes_from_category('Output', context)
 
 def get_first_enabled_output(node):
     for output in node.outputs:
@@ -771,6 +774,15 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         default='OctaneTextureDisplacement',
         description="When setup textures for shader, for displacement it'll use this node")
 
+    texture_setup_default_gamma: EnumProperty(
+        name="Shader's texture setup default gamma for non-color maps",
+        items=(
+            ("1.0", "Default 1.0 for non-color", "Setup node will use 1.0 gamma for non-color maps"),
+            ("2.2", "Default 2.2 for all", "Setup node will leave default 2.2 gamma for all textures")
+        ),
+        default='1.0',
+        description="When setup textures for shader, non-color maps will use this gamma settings")
+
     show_hotkey_list: BoolProperty(
         name="Show Hotkey List",
         default=False,
@@ -795,6 +807,7 @@ class NWNodeWrangler(bpy.types.AddonPreferences):
         col.prop(self, "merge_position")
         col.prop(self, "merge_hide")
         col.prop(self, "texture_setup_displacement")
+        col.prop(self, "texture_setup_default_gamma")
 
         box = layout.box()
         col = box.column(align=True)
@@ -3155,10 +3168,10 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
             # Remove digits
             fname = ''.join(i for i in fname if not i.isdigit())
             # Separate CamelCase by space
-            fname = re.sub("([a-z])([A-Z])","\g<1> \g<2>",fname)
+            fname = re.sub(r"([a-z])([A-Z])", r"\g<1> \g<2>",fname)
             # Replace common separators with SPACE
-            seperators = ['_', '.', '-', '__', '--', '#']
-            for sep in seperators:
+            separators = ['_', '.', '-', '__', '--', '#']
+            for sep in separators:
                 fname = fname.replace(sep, ' ')
 
             components = fname.split(' ')
@@ -3181,10 +3194,13 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         ['Medium', tags.sss_color.split(' '), None],
         ['Metallic', tags.metallic.split(' '), None],
         ['Specular', tags.specular.split(' '), None],
-        ['Specular map', tags.specular.split(' '), None],
         ['Roughness', rough_abbr + gloss_abbr, None],
         ['Bump', bump_abbr, None],
         ['Normal', normal_abbr, None],
+        ['Transmission', tags.transmission.split(' '), None],
+        ['Emission', tags.emission.split(' '), None],
+        ['Opacity', tags.alpha.split(' '), None],
+        ### ['Ambient Occlusion', tags.ambient_occlusion.split(' '), None],
         ]
 
         # Look through texture_types and set value as filename of first matched file
@@ -3203,6 +3219,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         # Remove socketnames without found files
         socketnames = [s for s in socketnames if s[2]
                        and path.exists(self.directory+s[2])]
+
         if not socketnames:
             self.report({'INFO'}, 'No matching images found')
             print('No matching images found')
@@ -3220,13 +3237,18 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         # Add found images
         print('\nMatched Textures:')
         texture_nodes = []
-        texture_node = None
         disp_texture = None
+        ao_texture = None
         normal_node = None
         roughness_node = None
+
+        settings = context.preferences.addons[__name__].preferences
+
         for i, sname in enumerate(socketnames):
             print(i, sname[0], sname[2])
-            if not sname[0] in active_node.inputs:
+
+            # if this input not exist for active node - skip
+            if not active_node.inputs.get(sname[0]):
                 continue
 
             # DISPLACEMENT NODES
@@ -3235,19 +3257,13 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
                 disp_texture.image = img
                 disp_texture.label = 'Displacement'
+                disp_texture.inputs["Legacy gamma"].default_value = float(settings.texture_setup_default_gamma)
                 #if disp_texture.image:
                 #    disp_texture.image.colorspace_settings.is_data = True
 
                 # Add displacement offset nodes
-                settings = context.preferences.addons[__name__].preferences
                 disp_node = nodes.new(type=settings.texture_setup_displacement)
                 disp_node.location = active_node.location + Vector((-200, -1110))
-
-                for key, value in disp_node.inputs.items() :
-                    print (key, value)
-
-                disp_node.inputs["Mid level"].default_value = 0.5  
-                disp_node.inputs["Height"].default_value = 0.1
                 link = links.new(disp_node.inputs[0], disp_texture.outputs[0])
 
                 # TODO Turn on true displacement in the material
@@ -3258,7 +3274,17 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                 if output_node:
                     if not output_node[0].inputs[2].is_linked:
                         link = links.new(active_node.inputs[sname[0]], disp_node.outputs[0])
-            
+
+                continue
+
+            # AMBIENT OCCLUSION TEXTURE
+            if sname[0] == 'Ambient Occlusion':
+                ao_texture = nodes.new(type='OctaneGreyscaleImage')
+                img = bpy.data.images.load(path.join(import_path, sname[2]))
+                ao_texture.image = img
+                ao_texture.label = sname[0]
+                ao_texture.inputs["Legacy gamma"].default_value = float(settings.texture_setup_default_gamma)
+
                 continue
 
             if not active_node.inputs[sname[0]].is_linked:
@@ -3267,6 +3293,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
 
                 if sname[0] in ['Metallic', 'Roughness', 'Specular', 'Bump']:
                     texture_node = nodes.new(type='OctaneGreyscaleImage')
+                    texture_node.inputs["Legacy gamma"].default_value = float(settings.texture_setup_default_gamma)
                 else:
                     texture_node = nodes.new(type='OctaneRGBImage')
                 img = bpy.data.images.load(path.join(import_path, sname[2]))
@@ -3288,21 +3315,18 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                         link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
 
                     elif match_gloss:
-                        # If Gloss Map add invert node
-                        invert_node = nodes.new(type='OctaneRGBImage')
-                        link = links.new(invert_node.inputs[0], texture_node.outputs[0])
+                        link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
+                        texture_node.inputs["Invert"].default_value = True
 
-                        link = links.new(active_node.inputs[sname[0]], invert_node.outputs[0])
-                        roughness_node = texture_node
 
                 else:
                     # This is a simple connection Texture --> Input slot
                     link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
 
 
-                # Use non-color for all but 'Albedo color' Textures
-                #if not sname[0] in ['Albedo color'] and texture_node.image:
-                    #texture_node.image.colorspace_settings.is_data = True
+                # Use non-color
+                if not sname[0] in ['Normal', 'Diffuse color', 'Diffuse', 'Albedo color', 'Albedo', 'Emission'] and texture_node.image:
+                    texture_node.inputs["Legacy gamma"].default_value = float(settings.texture_setup_default_gamma)
             else:
                 # If already texture connected. add to node list for alignment
                 texture_node = active_node.inputs[sname[0]].links[0].from_node
@@ -3315,9 +3339,13 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         if disp_texture:
             texture_nodes.append(disp_texture)
 
+        if ao_texture:
+            # We want the ambient occlusion texture to be the top most texture node
+            texture_nodes.insert(0, ao_texture)
+
         # Alignment
         for i, texture_node in enumerate(texture_nodes):
-            offset = Vector((-580, (i * -320) + 250))
+            offset = Vector((-580, (i * -420) + 350))
             texture_node.location = active_node.location + offset
 
         if normal_node:
@@ -3349,13 +3377,27 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
         #texture_input.location = mapping.location + Vector((-200, 0))
         #link = links.new(mapping.inputs[0], texture_input.outputs[2])
 
-        # Just to be sure
+        # Create frame around tex coords and mapping
+        # frame = nodes.new(type='NodeFrame')
+        # frame.label = 'Mapping'
+        # mapping.parent = frame
+        # #texture_input.parent = frame
+        # frame.update()
+
+        # # Create frame around texture nodes
+        # frame = nodes.new(type='NodeFrame')
+        # frame.label = 'Textures'
+        # for tnode in texture_nodes:
+        #     tnode.parent = frame
+        # frame.update()
+
+        # # Just to be sure
         active_node.select = False
         nodes.update()
         links.update()
         force_update(context)
         return {'FINISHED'}
-    
+
     ###
     ### For blender's clasic shaders
     ###
