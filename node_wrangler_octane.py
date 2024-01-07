@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 bl_info = {
-    "name": "Node Wrangler (Custom build for Octane)",
+    "name": "Node Wrangler (Custom build for sheepkru)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
-    "version": (1, 4, 1),
+    "version": (1, 4, 2),
     "blender": (2, 93, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow with Octane based on NW-v3.40",
@@ -1562,8 +1562,8 @@ class NWPreviewNode(Operator, NWBase):
                 return {'FINISHED'}
 
             # What follows is code for the shader editor
-            output_types = [x.nodetype for x in
-                            get_nodes_from_category_octane('Octane Output', context) if hasattr(x, 'nodetype')]
+            output_types = ["Octane Material"]
+
             valid = False
             oct_valid = False
             if active:
