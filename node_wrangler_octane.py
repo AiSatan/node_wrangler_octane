@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 bl_info = {
-    "name": "Node Wrangler (Custom build for sheepkru)",
+    "name": "Node Wrangler (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan, Ed O'Connell",
     "version": (1, 4, 2),
     "blender": (2, 93, 0),
@@ -200,6 +200,9 @@ def get_nodes_from_category_octane(category_name, context):
     for category in node_categories_iter(context):
         if category.name == category_name:
             return category.items(context)
+
+    # sometimes null, hm.
+    return "Octane Material"
 
     # if fails, it means older version?
     return get_nodes_from_category('Output', context)
@@ -1562,7 +1565,15 @@ class NWPreviewNode(Operator, NWBase):
                 return {'FINISHED'}
 
             # What follows is code for the shader editor
+
             output_types = ["Octane Material"]
+
+            try:
+                output_types = [x.nodetype for x in
+                    get_nodes_from_category_octane('Octane Output', context) if x and hasattr(x, 'nodetype')]
+            except Exception as e:
+                output_types = ["Octane Material"]
+
 
             valid = False
             oct_valid = False
