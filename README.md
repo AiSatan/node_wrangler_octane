@@ -1,4 +1,7 @@
 # node_wrangler_octane
+
+**Please use this link to get the latest stable build https://github.com/AiSatan/node_wrangler_octane/releases and follow the instructions, thanks!**
+
 This is the same node_wrangler like in your blender, but with little changes to support octane shaders instead of blenders.
 
 Features so far..:
