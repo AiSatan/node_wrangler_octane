@@ -1357,8 +1357,14 @@ class NWMergeNodes(Operator, NWBase):
                         # and that 'MIX' exists in math operations list.
                         # This way when selected_mix list is analyzed:
                         # Node data will be appended even though it doesn't meet requirements.
-                        elif output_type != 'SHADER' and mode == 'MIX':
+                        elif output_type != 'SHADER' and mode == 'MIX' and output_type != 'CUSTOM':
                             output_type = 'RGBA'
+                            valid_mode = True
+                        elif output_type == 'CUSTOM' and context.scene.render.engine == 'octane':
+                            if output.name == "Material out":
+                                output_type = 'SHADER'
+                            elif output.name == "Texture out":
+                                output_type = 'RGBA'
                             valid_mode = True
                         if output_type == type and valid_mode:
                             dst.append([i, node.location.x, node.location.y, node.dimensions.x, node.hide])
