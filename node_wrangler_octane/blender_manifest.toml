@@ -3,7 +3,7 @@ schema_version = "1.0.0"
 # Example of manifest file for a Blender extension
 # Change the values according to your extension
 id = "node_wrangler_octane"
-version = "1.5.1"
+version = "1.6.0"
 name = "Node Wrangler v3.47 (Custom build for Octane)"
 tagline = "Node Wrangler v3.47 (Custom build for Octane)"
 maintainer = "AiSatan"
