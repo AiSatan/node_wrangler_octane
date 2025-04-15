@@ -26,7 +26,7 @@ Install in blender just like any other plugin.
 Video example: 
 https://www.youtube.com/watch?v=UCu5GEpEkL0
 
-You can download the latest release here(you will need to unzip it to install or just download .py file):
+You can download the latest release here(now is possible to download zip file and install it, please follow the insteructions in realease page):
 https://github.com/AiSatan/node_wrangler_octane/releases
 
 
