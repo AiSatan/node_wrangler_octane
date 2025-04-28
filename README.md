@@ -26,7 +26,7 @@ Install in blender just like any other plugin.
 Video example: 
 https://www.youtube.com/watch?v=UCu5GEpEkL0
 
-You can download the latest release here(you will need to unzip it to install or just download .py file):
+You can download the latest release here(now is possible to download zip file and install it, please follow the insteructions in realease page):
 https://github.com/AiSatan/node_wrangler_octane/releases
 
 
@@ -36,8 +36,11 @@ Please, let me know if you notice any unexpected behavior/feedback, be free to c
 # Support+
 If you feel like spending money to help, any donations are appreciated by this link and will literally make our lives better: https://www.blender.org/foundation/donation-payment/
 
-# Tests
-✅ octane_blender_addon-28.5-beta - with nw_octane [1.4.0]
+# Tests/Preferred version
+
+✅ Blender Octane 2025.1-30.2_stable - with nw_octane [1.6.0]
+
+✅ octane_blender_addon-28.5-beta - with nw_octane [1.5.0]
 
 ✅ Blender_Octane_Edition_2023.1_28.5_stable - with nw_octane [1.4.0]
 

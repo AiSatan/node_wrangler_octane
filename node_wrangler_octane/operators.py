@@ -491,7 +491,8 @@ class NWPreviewNode(Operator, NWBase):
     # This is needed because geometry nodes has its own viewer node that uses the same shortcut as in the compositor.
     run_in_geometry_nodes: BoolProperty(default=True)
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.shader_output_type = ""
         self.shader_output_ident = ""
 
