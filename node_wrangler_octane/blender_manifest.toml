@@ -3,9 +3,9 @@ schema_version = "1.0.0"
 # Example of manifest file for a Blender extension
 # Change the values according to your extension
 id = "node_wrangler_octane"
-version = "1.6.0"
-name = "Node Wrangler v3.47 (Custom build for Octane)"
-tagline = "Node Wrangler v3.47 (Custom build for Octane)"
+version = "1.7.0"
+name = "Node Wrangler v4.1 (Custom build for Octane)"
+tagline = "Node Wrangler v4.1 (Custom build for Octane)"
 maintainer = "AiSatan"
 # Supported types: "add-on", "theme"
 type = "add-on"
@@ -17,7 +17,7 @@ website = "https://github.com/AiSatan/node_wrangler_octane"
 # # https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
 tags = ["Render", "Node"]
 
-blender_version_min = "4.2.0"
+blender_version_min = "5.0.0"
 # # Optional: Blender version that the extension does not support, earlier versions are supported.
 # # This can be omitted and defined later on the extensions platform if an issue is found.
 # blender_version_max = "5.1.0"
