@@ -46,6 +46,8 @@ Ando if you feel like it, please, consider any of these little support options:
 
 # Tests/Preferred version
 
+✅ Blender Octane 2026.3-31.8-stable - with nw_octane [1.7.0]
+
 ✅ Blender Octane 2025.1-30.2_stable - with nw_octane [1.6.0]
 
 ✅ octane_blender_addon-28.5-beta - with nw_octane [1.5.0]
