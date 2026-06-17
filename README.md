@@ -2,38 +2,38 @@
 
 **Please use this link to get the latest stable build https://github.com/AiSatan/node_wrangler_octane/releases and follow the instructions, thanks!**
 
-This is the same node_wrangler like in your blender, but with little changes to support octane shaders instead of blenders.
+This is the same node_wrangler as in Blender, but with a few changes to support Octane shaders instead of Blender's.
 
-Features so far..:
+Features so far:
 
-- viewer node / cntrl+shft+click on any node to add viewer node
-- full transform&uwp projectile / select texture node and ctrl+t
-- switch-type-to / select node and shift+s
-- shader's texture setup for octane / ctrl+shift+t on shader node - https://youtu.be/SON0bUczSf0
+- viewer node / ctrl+shift+click on any node to add a viewer node
+- full transform&uwp projectile / select a texture node and ctrl+t
+- switch-type-to / select a node and shift+s
+- shader texture setup for octane / ctrl+shift+t on a shader node - https://youtu.be/SON0bUczSf0
 - mix shader/textures with hotkeys / ctrl+shift+rmb / ctrl+numpad 0/ etc..
 
-this plugin behave as octane one __only if your renderer set to octane__, you can change renderer to eevee/cycle to work as default one.
+this plugin behaves as the octane one __only if your renderer is set to octane__, you can change renderer to eevee/cycles to work as the default one.
 
-Be free to leave any feedback or feature request.
+Feel free to leave any feedback or feature requests.
 
-This plugin still can be used with cycle/eevee, it doesn't override any of default methods.
+This plugin can still be used with cycles/eevee, it doesn't override any of the default methods.
 
 # Installation
-__Important: please, disable your node_wrangler before instaling this one.__
+__Important: please disable your node_wrangler before installing this one.__
 Just uncheck it so no conflict will happen.
-Install in blender just like any other plugin.
+Install in Blender just like any other plugin.
 
 Video example: 
 https://www.youtube.com/watch?v=UCu5GEpEkL0
 
-You can download the latest release here(now is possible to download zip file and install it, please follow the insteructions in realease page):
+You can download the latest release here (now it is possible to download a zip file and install it, please follow the instructions on the release page):
 https://github.com/AiSatan/node_wrangler_octane/releases
 
 
 # Support
-Please, let me know if you notice any unexpected behavior/feedback, be free to create an issue, I will try to figure out. 
+Please let me know if you notice any unexpected behavior or have feedback, feel free to create an issue and I will try to figure it out. 
 
-Ando if you feel like it, please, consider any of these little support options:
+And if you feel like it, please consider any of these support options:
 
 ⭐ Leave a GitHub Star ⭐
 
