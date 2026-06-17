@@ -33,8 +33,16 @@ https://github.com/AiSatan/node_wrangler_octane/releases
 # Support
 Please, let me know if you notice any unexpected behavior/feedback, be free to create an issue, I will try to figure out. 
 
-# Support+
-If you feel like spending money to help, any donations are appreciated by this link and will literally make our lives better: https://www.blender.org/foundation/donation-payment/
+Ando if you feel like it, please, consider any of these little support options:
+
+⭐ Leave a GitHub Star ⭐
+
+☕ [Buy me a coffee <3](https://buymeacoffee.com/aisatan) ☕
+
+<img width="32" height="32" alt="blender_emoji_transparent_32" src="https://github.com/user-attachments/assets/02ac03f9-3dd0-4674-8ea2-03b38e0e1f81" />[Donate to Blender Foundation](https://fund.blender.org/donate-once/)
+<img width="32" height="32" alt="blender_emoji_transparent_32" src="https://github.com/user-attachments/assets/1e6fa180-211d-4658-9b4f-c549a336a75e" />
+
+
 
 # Tests/Preferred version
 
