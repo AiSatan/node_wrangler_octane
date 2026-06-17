@@ -23,11 +23,13 @@ __Important: please disable your node_wrangler before installing this one.__
 Just uncheck it so no conflict will happen.
 Install in Blender just like any other plugin.
 
-Video example: 
-https://www.youtube.com/watch?v=UCu5GEpEkL0
 
 You can download the latest release here (now it is possible to download a zip file and install it, please follow the instructions on the release page):
 https://github.com/AiSatan/node_wrangler_octane/releases
+
+Video example of the installation process: 
+https://youtu.be/DvT-xE0bvhs
+
 
 
 # Support
