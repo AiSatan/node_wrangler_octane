@@ -5,12 +5,22 @@
 import bpy
 from bpy.types import Panel, Menu
 from bpy.props import StringProperty
-from nodeitems_utils import node_categories_iter, NodeItemCustom
-
-from . import operators
+from bpy.app.translations import contexts as i18n_contexts
 
 from .utils.constants import blend_types, geo_combine_operations, operations
-from .utils.nodes import get_nodes_links, nw_check, NWBase
+from .utils.nodes import get_nodes_links, NWBaseMenu
+
+
+def socket_to_icon(socket):
+    socket_type = socket.type
+
+    if socket_type == "CUSTOM":
+        return "RADIOBUT_OFF"
+
+    if socket_type == "VALUE":
+        socket_type = "FLOAT"
+
+    return "NODE_SOCKET_" + socket_type
 
 
 def drawlayout(context, layout, mode='non-panel'):
@@ -22,56 +32,56 @@ def drawlayout(context, layout, mode='non-panel'):
 
     if tree_type == 'ShaderNodeTree':
         col = layout.column(align=True)
-        col.operator(operators.NWAddTextureSetup.bl_idname, text="Add Texture Setup", icon='NODE_SEL')
-        col.operator(operators.NWAddPrincipledSetup.bl_idname, text="Add Principled Setup", icon='NODE_SEL')
+        col.operator("node.nw_add_texture", icon='NODE_SEL')
+        col.operator("node.nw_add_textures_for_principled", icon='NODE_SEL')
         col.separator()
 
     col = layout.column(align=True)
-    col.operator(operators.NWDetachOutputs.bl_idname, icon='UNLINKED')
-    col.operator(operators.NWSwapLinks.bl_idname)
-    col.menu(NWAddReroutesMenu.bl_idname, text="Add Reroutes", icon='LAYER_USED')
+    col.operator("node.nw_detach_outputs", icon='UNLINKED')
+    col.operator("node.nw_swap_links")
+    col.menu(NWAddReroutesMenu.bl_idname, icon='LAYER_USED')
     col.separator()
 
     col = layout.column(align=True)
-    col.menu(NWLinkActiveToSelectedMenu.bl_idname, text="Link Active To Selected", icon='LINKED')
+    col.menu(NWLinkActiveToSelectedMenu.bl_idname, icon='LINKED')
     if tree_type != 'GeometryNodeTree':
-        col.operator(operators.NWLinkToOutputNode.bl_idname, icon='DRIVER')
+        col.operator("node.nw_link_out", icon='DRIVER')
     col.separator()
 
     col = layout.column(align=True)
     if mode == 'panel':
         row = col.row(align=True)
-        row.operator(operators.NWClearLabel.bl_idname).option = True
-        row.operator(operators.NWModifyLabels.bl_idname)
+        row.operator("node.nw_clear_label").option = True
+        row.operator("node.nw_modify_labels")
     else:
-        col.operator(operators.NWClearLabel.bl_idname).option = True
-        col.operator(operators.NWModifyLabels.bl_idname)
-    col.menu(NWBatchChangeNodesMenu.bl_idname, text="Batch Change")
+        col.operator("node.nw_clear_label").option = True
+        col.operator("node.nw_modify_labels")
+    col.menu(NWBatchChangeNodesMenu.bl_idname, text="Batch Change", text_ctxt=i18n_contexts.operator_default)
     col.separator()
-    col.menu(NWCopyToSelectedMenu.bl_idname, text="Copy to Selected")
+    col.menu(NWCopyToSelectedMenu.bl_idname)
     col.separator()
 
     col = layout.column(align=True)
     if tree_type == 'CompositorNodeTree':
-        col.operator(operators.NWResetBG.bl_idname, icon='ZOOM_PREVIOUS')
+        col.operator("node.nw_bg_reset", icon='ZOOM_PREVIOUS')
     if tree_type != 'GeometryNodeTree':
-        col.operator(operators.NWReloadImages.bl_idname, icon='FILE_REFRESH')
+        col.operator("node.nw_reload_images", icon='FILE_REFRESH')
     col.separator()
 
     col = layout.column(align=True)
-    col.operator(operators.NWFrameSelected.bl_idname, icon='STICKY_UVS_LOC')
+    col.operator('node.join', icon='STICKY_UVS_LOC')
     col.separator()
 
     col = layout.column(align=True)
-    col.operator(operators.NWAlignNodes.bl_idname, icon='CENTER_ONLY')
+    col.operator("node.nw_align_nodes", icon='CENTER_ONLY')
+    col.operator("node.nw_center_nodes", icon='SNAP_FACE_CENTER')
     col.separator()
 
     col = layout.column(align=True)
-    col.operator(operators.NWDeleteUnused.bl_idname, icon='CANCEL')
-    col.separator()
+    col.operator("node.nw_del_unused", icon='CANCEL')
 
 
-class NodeWranglerPanel(Panel, NWBase):
+class NodeWranglerPanel(Panel, NWBaseMenu):
     bl_idname = "NODE_PT_nw_node_wrangler"
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Node Wrangler"
@@ -85,14 +95,14 @@ class NodeWranglerPanel(Panel, NWBase):
     remove: StringProperty()
 
     def draw(self, context):
-        self.layout.label(text="(Quick access: Shift+W)")
+        self.layout.label(text="(Quick Access: Shift+W)")
         drawlayout(context, self.layout, mode='panel')
 
 
 #
 #  M E N U S
 #
-class NodeWranglerMenu(Menu, NWBase):
+class NodeWranglerMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_node_wrangler_menu"
     bl_label = "Node Wrangler"
 
@@ -101,7 +111,7 @@ class NodeWranglerMenu(Menu, NWBase):
         drawlayout(context, self.layout)
 
 
-class NWMergeNodesMenu(Menu, NWBase):
+class NWMergeNodesMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_merge_nodes_menu"
     bl_label = "Merge Selected Nodes"
 
@@ -116,15 +126,15 @@ class NWMergeNodesMenu(Menu, NWBase):
         else:
             layout.menu(NWMergeMixMenu.bl_idname, text="Use Mix Nodes")
             layout.menu(NWMergeMathMenu.bl_idname, text="Use Math Nodes")
-            props = layout.operator(operators.NWMergeNodes.bl_idname, text="Use Z-Combine Nodes")
+            props = layout.operator("node.nw_merge_nodes", text="Use Depth Combine Nodes")
             props.mode = 'MIX'
-            props.merge_type = 'ZCOMBINE'
-            props = layout.operator(operators.NWMergeNodes.bl_idname, text="Use Alpha Over Nodes")
+            props.merge_type = 'DEPTH_COMBINE'
+            props = layout.operator("node.nw_merge_nodes", text="Use Alpha Over Nodes")
             props.mode = 'MIX'
             props.merge_type = 'ALPHAOVER'
 
 
-class NWMergeGeometryMenu(Menu, NWBase):
+class NWMergeGeometryMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_merge_geometry_menu"
     bl_label = "Merge Selected Nodes using Geometry Nodes"
 
@@ -132,12 +142,12 @@ class NWMergeGeometryMenu(Menu, NWBase):
         layout = self.layout
         # The boolean node + Join Geometry node
         for type, name, description in geo_combine_operations:
-            props = layout.operator(operators.NWMergeNodes.bl_idname, text=name)
+            props = layout.operator("node.nw_merge_nodes", text=name, text_ctxt=i18n_contexts.id_nodetree)
             props.mode = type
             props.merge_type = 'GEOMETRY'
 
 
-class NWMergeShadersMenu(Menu, NWBase):
+class NWMergeShadersMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_merge_shaders_menu"
     bl_label = "Merge Selected Nodes using Shaders"
 
@@ -145,75 +155,36 @@ class NWMergeShadersMenu(Menu, NWBase):
         layout = self.layout
         for type in ('MIX', 'ADD'):
             name = f'{type.capitalize()} Shader'
-            props = layout.operator(operators.NWMergeNodes.bl_idname, text=name)
+            props = layout.operator("node.nw_merge_nodes", text=name, text_ctxt=i18n_contexts.default)
             props.mode = type
             props.merge_type = 'SHADER'
 
 
-class NWMergeMixMenu(Menu, NWBase):
+class NWMergeMixMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_merge_mix_menu"
     bl_label = "Merge Selected Nodes using Mix"
 
     def draw(self, context):
         layout = self.layout
         for type, name, description in blend_types:
-            props = layout.operator(operators.NWMergeNodes.bl_idname, text=name)
+            props = layout.operator("node.nw_merge_nodes", text=name, text_ctxt=i18n_contexts.id_nodetree)
             props.mode = type
             props.merge_type = 'MIX'
 
 
-class NWConnectionListOutputs(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_connection_list_out"
-    bl_label = "From:"
-
-    def draw(self, context):
-        layout = self.layout
-        nodes, links = get_nodes_links(context)
-
-        n1 = nodes[context.scene.NWLazySource]
-        for index, output in enumerate(n1.outputs):
-            # Only show sockets that are exposed.
-            if output.enabled:
-                layout.operator(
-                    operators.NWCallInputsMenu.bl_idname,
-                    text=output.name,
-                    icon="RADIOBUT_OFF").from_socket = index
-
-
-class NWConnectionListInputs(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_connection_list_in"
-    bl_label = "To:"
-
-    def draw(self, context):
-        layout = self.layout
-        nodes, links = get_nodes_links(context)
-
-        n2 = nodes[context.scene.NWLazyTarget]
-
-        for index, input in enumerate(n2.inputs):
-            # Only show sockets that are exposed.
-            # This prevents, for example, the scale value socket
-            # of the vector math node being added to the list when
-            # the mode is not 'SCALE'.
-            if input.enabled:
-                op = layout.operator(operators.NWMakeLink.bl_idname, text=input.name, icon="FORWARD")
-                op.from_socket = context.scene.NWSourceSocket
-                op.to_socket = index
-
-
-class NWMergeMathMenu(Menu, NWBase):
+class NWMergeMathMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_merge_math_menu"
     bl_label = "Merge Selected Nodes using Math"
 
     def draw(self, context):
         layout = self.layout
         for type, name, description in operations:
-            props = layout.operator(operators.NWMergeNodes.bl_idname, text=name)
+            props = layout.operator("node.nw_merge_nodes", text=name, text_ctxt=i18n_contexts.id_nodetree)
             props.mode = type
             props.merge_type = 'MATH'
 
 
-class NWBatchChangeNodesMenu(Menu, NWBase):
+class NWBatchChangeNodesMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_batch_change_nodes_menu"
     bl_label = "Batch Change Selected Nodes"
 
@@ -223,64 +194,68 @@ class NWBatchChangeNodesMenu(Menu, NWBase):
         layout.menu(NWBatchChangeOperationMenu.bl_idname)
 
 
-class NWBatchChangeBlendTypeMenu(Menu, NWBase):
+class NWBatchChangeBlendTypeMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_batch_change_blend_type_menu"
     bl_label = "Batch Change Blend Type"
 
     def draw(self, context):
         layout = self.layout
         for type, name, description in blend_types:
-            props = layout.operator(operators.NWBatchChangeNodes.bl_idname, text=name)
+            props = layout.operator(
+                "node.nw_batch_change",
+                text=name,
+                text_ctxt=i18n_contexts.id_nodetree,
+            )
             props.blend_type = type
             props.operation = 'CURRENT'
 
 
-class NWBatchChangeOperationMenu(Menu, NWBase):
+class NWBatchChangeOperationMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_batch_change_operation_menu"
     bl_label = "Batch Change Math Operation"
 
     def draw(self, context):
         layout = self.layout
         for type, name, description in operations:
-            props = layout.operator(operators.NWBatchChangeNodes.bl_idname, text=name)
+            props = layout.operator("node.nw_batch_change", text=name, text_ctxt=i18n_contexts.id_nodetree)
             props.blend_type = 'CURRENT'
             props.operation = type
 
 
-class NWCopyToSelectedMenu(Menu, NWBase):
+class NWCopyToSelectedMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_copy_node_properties_menu"
     bl_label = "Copy to Selected"
 
     def draw(self, context):
         layout = self.layout
-        layout.operator(operators.NWCopySettings.bl_idname, text="Settings from Active")
+        layout.operator("node.nw_copy_settings", text="Settings from Active")
         layout.menu(NWCopyLabelMenu.bl_idname)
 
 
-class NWCopyLabelMenu(Menu, NWBase):
+class NWCopyLabelMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_copy_label_menu"
     bl_label = "Copy Label"
 
     def draw(self, context):
         layout = self.layout
-        layout.operator(operators.NWCopyLabel.bl_idname, text="from Active Node's Label").option = 'FROM_ACTIVE'
-        layout.operator(operators.NWCopyLabel.bl_idname, text="from Linked Node's Label").option = 'FROM_NODE'
-        layout.operator(operators.NWCopyLabel.bl_idname, text="from Linked Output's Name").option = 'FROM_SOCKET'
+        layout.operator("node.nw_copy_label", text="From Active Node's Label").option = 'FROM_ACTIVE'
+        layout.operator("node.nw_copy_label", text="From Linked Node's Label").option = 'FROM_NODE'
+        layout.operator("node.nw_copy_label", text="From Linked Output's Name").option = 'FROM_SOCKET'
 
 
-class NWAddReroutesMenu(Menu, NWBase):
+class NWAddReroutesMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_add_reroutes_menu"
     bl_label = "Add Reroutes"
-    bl_description = "Add Reroute Nodes to Selected Nodes' Outputs"
+    bl_description = "Add reroute nodes to selected nodes' outputs"
 
     def draw(self, context):
         layout = self.layout
-        layout.operator(operators.NWAddReroutes.bl_idname, text="to All Outputs").option = 'ALL'
-        layout.operator(operators.NWAddReroutes.bl_idname, text="to Loose Outputs").option = 'LOOSE'
-        layout.operator(operators.NWAddReroutes.bl_idname, text="to Linked Outputs").option = 'LINKED'
+        layout.operator("node.nw_add_reroutes", text="To All Outputs").option = 'ALL'
+        layout.operator("node.nw_add_reroutes", text="To Loose Outputs").option = 'LOOSE'
+        layout.operator("node.nw_add_reroutes", text="To Linked Outputs").option = 'LINKED'
 
 
-class NWLinkActiveToSelectedMenu(Menu, NWBase):
+class NWLinkActiveToSelectedMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_link_active_to_selected_menu"
     bl_label = "Link Active to Selected"
 
@@ -291,49 +266,49 @@ class NWLinkActiveToSelectedMenu(Menu, NWBase):
         layout.menu(NWLinkUseOutputsNamesMenu.bl_idname)
 
 
-class NWLinkStandardMenu(Menu, NWBase):
+class NWLinkStandardMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_link_standard_menu"
     bl_label = "To All Selected"
 
     def draw(self, context):
         layout = self.layout
-        props = layout.operator(operators.NWLinkActiveToSelected.bl_idname, text="Don't Replace Links")
+        props = layout.operator("node.nw_link_active_to_selected", text="Do Not Replace Links")
         props.replace = False
         props.use_node_name = False
         props.use_outputs_names = False
-        props = layout.operator(operators.NWLinkActiveToSelected.bl_idname, text="Replace Links")
+        props = layout.operator("node.nw_link_active_to_selected", text="Replace Links")
         props.replace = True
         props.use_node_name = False
         props.use_outputs_names = False
 
 
-class NWLinkUseNodeNameMenu(Menu, NWBase):
+class NWLinkUseNodeNameMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_link_use_node_name_menu"
     bl_label = "Use Node Name/Label"
 
     def draw(self, context):
         layout = self.layout
-        props = layout.operator(operators.NWLinkActiveToSelected.bl_idname, text="Don't Replace Links")
+        props = layout.operator("node.nw_link_active_to_selected", text="Do Not Replace Links")
         props.replace = False
         props.use_node_name = True
         props.use_outputs_names = False
-        props = layout.operator(operators.NWLinkActiveToSelected.bl_idname, text="Replace Links")
+        props = layout.operator("node.nw_link_active_to_selected", text="Replace Links")
         props.replace = True
         props.use_node_name = True
         props.use_outputs_names = False
 
 
-class NWLinkUseOutputsNamesMenu(Menu, NWBase):
+class NWLinkUseOutputsNamesMenu(Menu, NWBaseMenu):
     bl_idname = "NODE_MT_nw_link_use_outputs_names_menu"
-    bl_label = "Use Outputs Names"
+    bl_label = "Use Output Names"
 
     def draw(self, context):
         layout = self.layout
-        props = layout.operator(operators.NWLinkActiveToSelected.bl_idname, text="Don't Replace Links")
+        props = layout.operator("node.nw_link_active_to_selected", text="Do Not Replace Links")
         props.replace = False
         props.use_node_name = False
         props.use_outputs_names = True
-        props = layout.operator(operators.NWLinkActiveToSelected.bl_idname, text="Replace Links")
+        props = layout.operator("node.nw_link_active_to_selected", text="Replace Links")
         props.replace = True
         props.use_node_name = False
         props.use_outputs_names = True
@@ -345,11 +320,12 @@ class NWAttributeMenu(bpy.types.Menu):
 
     @classmethod
     def poll(cls, context):
-        valid = False
-        if nw_check(context):
-            snode = context.space_data
-            valid = snode.tree_type == 'ShaderNodeTree'
-        return valid
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR'
+                and space.node_tree is not None
+                and space.node_tree.library is None
+                and space.tree_type == 'ShaderNodeTree'
+                and space.shader_type == 'OBJECT')
 
     def draw(self, context):
         l = self.layout
@@ -365,24 +341,20 @@ class NWAttributeMenu(bpy.types.Menu):
         for obj in objs:
             if obj.data.attributes:
                 for attr in obj.data.attributes:
-                    attrs.append(attr.name)
+                    if not attr.is_internal:
+                        attrs.append(attr.name)
         attrs = list(set(attrs))  # get a unique list
 
         if attrs:
             for attr in attrs:
-                l.operator(operators.NWAddAttrNode.bl_idname, text=attr).attr_name = attr
+                l.operator(
+                    "node.nw_add_attr_node",
+                    text=attr,
+                    translate=False,
+                ).attr_name = attr
         else:
             l.label(text="No attributes on objects with this material")
 
-
-class NWSwitchNodeTypeMenu(Menu, NWBase):
-    bl_idname = "NODE_MT_nw_switch_node_type_menu"
-    bl_label = "Switch Type to..."
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="This operator is removed due to the changes of node menus.", icon='ERROR')
-        layout.label(text="A native implementation of the function is expected in the future.")
 
 #
 #  APPENDAGES TO EXISTING UI
@@ -391,9 +363,8 @@ class NWSwitchNodeTypeMenu(Menu, NWBase):
 
 def select_parent_children_buttons(self, context):
     layout = self.layout
-    layout.operator(operators.NWSelectParentChildren.bl_idname,
-                    text="Select frame's members (children)").option = 'CHILD'
-    layout.operator(operators.NWSelectParentChildren.bl_idname, text="Select parent frame").option = 'PARENT'
+    layout.operator("node.nw_select_parent_child", text="Select Frame Children").option = 'CHILD'
+    layout.operator("node.nw_select_parent_child", text="Select Parent Frame").option = 'PARENT'
 
 
 def attr_nodes_menu_func(self, context):
@@ -404,38 +375,46 @@ def attr_nodes_menu_func(self, context):
 
 def multipleimages_menu_func(self, context):
     col = self.layout.column(align=True)
-    col.operator(operators.NWAddMultipleImages.bl_idname, text="Multiple Images")
-    col.operator(operators.NWAddSequence.bl_idname, text="Image Sequence")
+    col.operator("node.add_image", text="Multiple Images")
+    col.operator("node.nw_add_sequence", text="Image Sequence")
     col.separator()
 
 
 def bgreset_menu_func(self, context):
-    self.layout.operator(operators.NWResetBG.bl_idname)
+    self.layout.operator("node.nw_bg_reset")
 
 
 def save_viewer_menu_func(self, context):
-    if nw_check(context):
-        if context.space_data.tree_type == 'CompositorNodeTree':
-            if context.scene.node_tree.nodes.active:
-                if context.scene.node_tree.nodes.active.type == "VIEWER":
-                    self.layout.operator(operators.NWSaveViewer.bl_idname, icon='FILE_IMAGE')
+    space = context.space_data
+    if (space.type == 'NODE_EDITOR'
+            and space.tree_type == 'CompositorNodeTree'
+            and space.node_tree_sub_type == 'SCENE'
+            and space.node_tree is not None
+            and space.node_tree.library is None
+            and space.edit_tree.nodes.active
+            and space.edit_tree.nodes.active.type == "VIEWER"):
+        self.layout.operator("node.nw_save_viewer", icon='FILE_IMAGE')
 
 
 def reset_nodes_button(self, context):
     node_active = context.active_node
     node_selected = context.selected_nodes
-    node_ignore = ["FRAME", "REROUTE", "GROUP"]
 
-    # Check if active node is in the selection and respective type
-    if (len(node_selected) == 1) and node_active and node_active.select and node_active.type not in node_ignore:
-        row = self.layout.row()
-        row.operator(operators.NWResetNodes.bl_idname, text="Reset Node", icon="FILE_REFRESH")
-        self.layout.separator()
+    # Check if active node is in the selection, ignore some node types
+    if (len(node_selected) != 1
+            or node_active is None
+            or not node_active.select
+            or node_active.type in {"REROUTE", "GROUP"}):
+        return
 
-    elif (len(node_selected) == 1) and node_active and node_active.select and node_active.type == "FRAME":
-        row = self.layout.row()
-        row.operator(operators.NWResetNodes.bl_idname, text="Reset Nodes in Frame", icon="FILE_REFRESH")
-        self.layout.separator()
+    row = self.layout.row()
+
+    if node_active.type == "FRAME":
+        row.operator("node.nw_reset_nodes", text="Reset Nodes in Frame", icon="FILE_REFRESH")
+    else:
+        row.operator("node.nw_reset_nodes", text="Reset Node", icon="FILE_REFRESH")
+
+    self.layout.separator()
 
 
 classes = (
@@ -445,8 +424,6 @@ classes = (
     NWMergeGeometryMenu,
     NWMergeShadersMenu,
     NWMergeMixMenu,
-    NWConnectionListOutputs,
-    NWConnectionListInputs,
     NWMergeMathMenu,
     NWBatchChangeNodesMenu,
     NWBatchChangeBlendTypeMenu,
@@ -459,7 +436,6 @@ classes = (
     NWLinkUseNodeNameMenu,
     NWLinkUseOutputsNamesMenu,
     NWAttributeMenu,
-    NWSwitchNodeTypeMenu,
 )
 
 

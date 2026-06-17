@@ -4,3 +4,9 @@
 
 /.vs
 *.zip
+__pycache__
+
+# debug folders
+node_wrangler_octane_*/*
+node_wrangler_3*/*
+node_wrangler_4*/*

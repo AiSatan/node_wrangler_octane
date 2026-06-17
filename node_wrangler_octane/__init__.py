@@ -3,14 +3,15 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 bl_info = {
-    "name": "Node Wrangler v3.47 (Custom build for Octane)",
+    "name": "Node Wrangler v4.1 (Custom build for Octane)",
     "author": "Bartek Skorupa, Greg Zaal, Sebastian Koenig, Christian Brinkmann, Florian Meyer, AiSatan",
-    "version": (1, 6, 0),
-    "blender": (4, 0, 0),
+    "version": (1, 0, 0),
+    "blender": (5, 0, 0),
     "location": "Node Editor Toolbar or Shift-W",
     "description": "Various tools to enhance and speed up node-based workflow - now with Octane",
     "warning": "",
     "doc_url": "https://github.com/AiSatan/node_wrangler_octane",
+    "support": 'OFFICIAL',
     "category": "Node",
 }
 
